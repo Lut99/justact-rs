@@ -1,0 +1,11 @@
+[package]
+name = "justact"
+version = "1.0.0"
+edition = "2021"
+authors = ["Tim Müller"]
+repository = "https://github.com/Lut99/justact-rs"
+description = "Implements the core framework part of the JustAct framework. For more details, see [1]."
+
+
+[dependencies]
+nohash-hasher = "0.2.0"
