@@ -8,15 +8,15 @@ description = "Implements the core framework part of the JustAct framework. For 
 
 
 [dependencies]
-# bytemuck = { version = "1.20.0", features = ["derive"], optional = true }
+chrono = { version = "0.4.39", optional = true }
 # nohash-hasher = "0.2.0"
 # parking_lot = { version = "0.12.3", optional = true }
-serde = { version = "1.0.215", features = ["derive"], optional = true }
+serde = { version = "1.0.216", features = ["derive"], optional = true }
 
 
 [features]
 default = []
 
-# bytemuck = ["dep:bytemuck"]
+chrono = ["dep:chrono"]
 # parking_lot = ["dep:parking_lot"]
 serde = ["dep:serde"]

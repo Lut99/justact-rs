@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:00:07
 //  Last edited:
-//    10 Dec 2024, 17:30:32
+//    11 Dec 2024, 15:33:28
 //  Auto updated?
 //    Yes
 //
@@ -22,6 +22,7 @@ use std::task::Poll;
 use crate::auxillary::Identifiable;
 use crate::runtime::View;
 use crate::sets::{Set, SetMut};
+use crate::times::Times;
 
 
 /***** LIBRARY *****/
@@ -58,7 +59,7 @@ pub trait Agent: Identifiable {
     /// - a [`Poll::Pending`], indicating the agent wants to stick around.
     fn poll<T, A, S, E>(&mut self, view: View<T, A, S, E>) -> Result<Poll<()>, Self::Error>
     where
-        T: Set,
+        T: Times,
         A: Set,
         S: SetMut,
         E: SetMut;
@@ -99,7 +100,7 @@ pub trait Synchronizer: Identifiable {
     /// - a [`ControlFlow::Break`], indicating the system should stop.
     fn poll<T, A, S, E>(&mut self, view: View<T, A, S, E>) -> Result<ControlFlow<()>, Self::Error>
     where
-        T: SetMut,
+        T: SetMut + Times,
         A: SetMut,
         S: Set,
         E: Set;

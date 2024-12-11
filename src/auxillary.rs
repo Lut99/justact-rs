@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 10:54:37
 //  Last edited:
-//    10 Dec 2024, 14:05:58
+//    11 Dec 2024, 15:22:14
 //  Auto updated?
 //    Yes
 //
@@ -14,6 +14,8 @@
 //
 
 use std::hash::Hash;
+
+use crate::times::Timestamp;
 
 
 /***** LIBRARY *****/
@@ -45,6 +47,34 @@ impl<'a, T: Authored> Authored for &'a mut T {
 
 
 
+/// Abstractly defines an object which has an actor.
+pub trait Actored {
+    /// Some identifier for the actor.
+    type ActorId: Eq + Hash;
+
+    /// Returns the ID of the actor of this object.
+    ///
+    /// # Returns
+    /// A reference to an [`Actored::ActorId`] that describes the unique ID of this object's actor.
+    fn actor_id(&self) -> &Self::ActorId;
+}
+
+// Default impls for pointer-like types.
+impl<'a, T: Actored> Actored for &'a T {
+    type ActorId = T::ActorId;
+
+    #[inline]
+    fn actor_id(&self) -> &Self::ActorId { <T as Actored>::actor_id(self) }
+}
+impl<'a, T: Actored> Actored for &'a mut T {
+    type ActorId = T::ActorId;
+
+    #[inline]
+    fn actor_id(&self) -> &Self::ActorId { <T as Actored>::actor_id(self) }
+}
+
+
+
 /// Abstractly defines an object which is uniquely identifiable by something.
 pub trait Identifiable {
     /// The type of the thing identifying this object.
@@ -69,4 +99,33 @@ impl<'a, T: Identifiable> Identifiable for &'a mut T {
 
     #[inline]
     fn id(&self) -> &Self::Id { <T as Identifiable>::id(self) }
+}
+
+
+
+/// Abstractly defines an object which is valid at a certain time.
+pub trait Timed {
+    /// The representation of the timestamp.
+    type Timestamp: Eq + Ord;
+
+
+    /// Returns the timestamp at which this object was valid.
+    ///
+    /// # Returns
+    /// A [`Timestamp<Timed::Timestamp>`](Timestamp) encoding the timestamp at which it was valid.
+    fn at(&self) -> &Timestamp<Self::Timestamp>;
+}
+
+// Default impls for pointer-like types.
+impl<'a, T: Timed> Timed for &'a T {
+    type Timestamp = T::Timestamp;
+
+    #[inline]
+    fn at(&self) -> &Timestamp<Self::Timestamp> { <T as Timed>::at(self) }
+}
+impl<'a, T: Timed> Timed for &'a mut T {
+    type Timestamp = T::Timestamp;
+
+    #[inline]
+    fn at(&self) -> &Timestamp<Self::Timestamp> { <T as Timed>::at(self) }
 }
