@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    12 Dec 2024, 12:57:54
+//    12 Dec 2024, 13:00:31
 //  Auto updated?
 //    Yes
 //
@@ -14,7 +14,7 @@
 
 use std::error::Error;
 
-use crate::auxillary::{Effectored, Identifiable};
+use crate::auxillary::{Affectored, Identifiable};
 use crate::sets::InfallibleSet;
 
 
@@ -23,7 +23,7 @@ use crate::sets::InfallibleSet;
 ///
 /// Effects are like truths, but have an additional effector agent that does
 /// them. As such, they are also identified by facts.
-pub trait Effect: Effectored + Truth {}
+pub trait Effect: Affectored + Truth {}
 
 /// Defines how a single truth in the policy's [`Denotation`] looks like.
 ///
