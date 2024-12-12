@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:00:07
 //  Last edited:
-//    11 Dec 2024, 15:33:28
+//    12 Dec 2024, 12:47:20
 //  Auto updated?
 //    Yes
 //
@@ -19,10 +19,13 @@ use std::error::Error;
 use std::ops::ControlFlow;
 use std::task::Poll;
 
+use crate::actions::Action;
+use crate::agreements::Agreement;
 use crate::auxillary::Identifiable;
+use crate::messages::Message;
 use crate::runtime::View;
 use crate::sets::{Set, SetMut};
-use crate::times::Times;
+use crate::times::{Times, Timestamp};
 
 
 /***** LIBRARY *****/
@@ -57,12 +60,12 @@ pub trait Agent: Identifiable {
     /// A [`Poll`] which, can either:
     /// - be [`Poll::Ready`], indicating the agent has no more work to do (and can be deleted); or
     /// - a [`Poll::Pending`], indicating the agent wants to stick around.
-    fn poll<T, A, S, E>(&mut self, view: View<T, A, S, E>) -> Result<Poll<()>, Self::Error>
+    fn poll<T, A, S, E, MI, MA, MC, MT>(&mut self, view: View<T, A, S, E>) -> Result<Poll<()>, Self::Error>
     where
         T: Times,
-        A: Set,
-        S: SetMut,
-        E: SetMut;
+        A: Set<Agreement<MI, MA, MC, MT>>,
+        S: SetMut<Message<MI, MA, MC>>,
+        E: SetMut<Action<MI, MA, MC, MT>>;
 }
 
 
@@ -98,10 +101,10 @@ pub trait Synchronizer: Identifiable {
     /// A [`ControlFlow`] which, can either:
     /// - be [`ControlFlow::Continue`], indicating the runtime should continue; or
     /// - a [`ControlFlow::Break`], indicating the system should stop.
-    fn poll<T, A, S, E>(&mut self, view: View<T, A, S, E>) -> Result<ControlFlow<()>, Self::Error>
+    fn poll<T, A, S, E, MI, MA, MC, MT>(&mut self, view: View<T, A, S, E>) -> Result<ControlFlow<()>, Self::Error>
     where
-        T: SetMut + Times,
-        A: SetMut,
-        S: Set,
-        E: Set;
+        T: SetMut<Timestamp<MT>> + Times,
+        A: SetMut<Agreement<MI, MA, MC, MT>>,
+        S: Set<Message<MI, MA, MC>>,
+        E: Set<Action<MI, MA, MC, MT>>;
 }

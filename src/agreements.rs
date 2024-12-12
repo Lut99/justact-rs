@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 10:07:55
 //  Last edited:
-//    11 Dec 2024, 15:21:50
+//    12 Dec 2024, 12:49:24
 //  Auto updated?
 //    Yes
 //
@@ -45,15 +45,19 @@ impl<I: Eq + Hash, A, C, T> Identifiable for Agreement<I, A, C, T> {
     #[inline]
     fn id(&self) -> &Self::Id { self.message.id() }
 }
-impl<I: Eq + Hash, A, C, T> Set for Agreement<I, A, C, T> {
-    type Elem = <Message<I, A, C> as Set>::Elem;
-    type Error = <Message<I, A, C> as Set>::Error;
+impl<I: Eq + Hash, A, C, T> Set<Message<I, A, C>> for Agreement<I, A, C, T> {
+    type Error = <Message<I, A, C> as Set<Message<I, A, C>>>::Error;
 
     #[inline]
-    fn get(&self, id: &<Self::Elem as Identifiable>::Id) -> Result<Option<&Self::Elem>, Self::Error> { self.message.get(id) }
+    fn get(&self, id: &<Message<I, A, C> as Identifiable>::Id) -> Result<Option<&Message<I, A, C>>, Self::Error> { self.message.get(id) }
 
     #[inline]
-    fn iter(&self) -> Result<impl Iterator<Item = &Self::Elem>, Self::Error> { self.message.iter() }
+    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s Message<I, A, C>>, Self::Error>
+    where
+        Message<I, A, C>: 's,
+    {
+        self.message.iter()
+    }
 }
 impl<I, A, C: Extractable, T> Extractable for Agreement<I, A, C, T> {
     type Policy = <Message<I, A, C> as Extractable>::Policy;

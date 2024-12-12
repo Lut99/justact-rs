@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 10:54:37
 //  Last edited:
-//    11 Dec 2024, 15:22:14
+//    12 Dec 2024, 12:56:04
 //  Auto updated?
 //    Yes
 //
@@ -45,8 +45,6 @@ impl<'a, T: Authored> Authored for &'a mut T {
     fn author_id(&self) -> &Self::AuthorId { <T as Authored>::author_id(self) }
 }
 
-
-
 /// Abstractly defines an object which has an actor.
 pub trait Actored {
     /// Some identifier for the actor.
@@ -71,6 +69,33 @@ impl<'a, T: Actored> Actored for &'a mut T {
 
     #[inline]
     fn actor_id(&self) -> &Self::ActorId { <T as Actored>::actor_id(self) }
+}
+
+/// Abstractly defines an object which has an effector.
+pub trait Effectored {
+    /// Some identifier for the effector.
+    type EffectorId: Eq + Hash;
+
+    /// Returns the ID of the effector of this object.
+    ///
+    /// # Returns
+    /// A reference to an [`Effector::EffectorId`] that describes the unique ID of this object's
+    /// effector.
+    fn effector_id(&self) -> &Self::EffectorId;
+}
+
+// Default impls for pointer-like types.
+impl<'a, T: Effectored> Effectored for &'a T {
+    type EffectorId = T::EffectorId;
+
+    #[inline]
+    fn effector_id(&self) -> &Self::EffectorId { <T as Effectored>::effector_id(self) }
+}
+impl<'a, T: Effectored> Effectored for &'a mut T {
+    type EffectorId = T::EffectorId;
+
+    #[inline]
+    fn effector_id(&self) -> &Self::EffectorId { <T as Effectored>::effector_id(self) }
 }
 
 

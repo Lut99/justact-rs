@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 14:57:21
 //  Last edited:
-//    11 Dec 2024, 15:29:08
+//    12 Dec 2024, 12:43:19
 //  Auto updated?
 //    Yes
 //
@@ -43,7 +43,7 @@ impl<T: Eq + Hash> Identifiable for Timestamp<T> {
 
 /// Extends a [`Set`] of [`Timestamp`]s with functionality to see if an agreement is valid at this
 /// timestamp.
-pub trait Times: Set<Elem = Timestamp<Self::Timestamp>> {
+pub trait Times: Set<Timestamp<Self::Timestamp>> {
     /// The timestamp representation used in this set.
     type Timestamp: Eq + Hash + Ord;
 

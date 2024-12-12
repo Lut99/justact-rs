@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    10 Dec 2024, 12:08:36
+//    12 Dec 2024, 12:49:04
 //  Auto updated?
 //    Yes
 //
@@ -50,17 +50,19 @@ impl<I, A: Eq + Hash, C> Authored for Message<I, A, C> {
     #[inline]
     fn author_id(&self) -> &Self::AuthorId { &self.author_id }
 }
-impl<I: Eq + Hash, A, C> Set for Message<I, A, C> {
-    type Elem = Self;
+impl<I: Eq + Hash, A, C> Set<Self> for Message<I, A, C> {
     type Error = Infallible;
 
     #[inline]
-    fn get(&self, id: &<Self::Elem as Identifiable>::Id) -> Result<Option<&Self::Elem>, Self::Error> {
-        if &self.id == id { Ok(Some(self)) } else { Ok(None) }
-    }
+    fn get(&self, id: &<Self as Identifiable>::Id) -> Result<Option<&Self>, Self::Error> { if &self.id == id { Ok(Some(self)) } else { Ok(None) } }
 
     #[inline]
-    fn iter(&self) -> Result<impl Iterator<Item = &Self::Elem>, Self::Error> { Ok(Some(self).into_iter()) }
+    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s Self>, Self::Error>
+    where
+        Self: 's,
+    {
+        Ok(Some(self).into_iter())
+    }
 }
 impl<I, A, C: Extractable> Extractable for Message<I, A, C> {
     type Policy = C::Policy;
@@ -81,28 +83,39 @@ pub struct MessageSet<I, A, C> {
 }
 
 // Justact impls
-impl<I: Eq + Hash, A, C> Set for MessageSet<I, A, C> {
-    type Elem = Message<I, A, C>;
+impl<I: Eq + Hash, A, C> Set<Message<I, A, C>> for MessageSet<I, A, C> {
     type Error = Infallible;
 
     #[inline]
-    fn get(&self, id: &<Self::Elem as Identifiable>::Id) -> Result<Option<&Self::Elem>, Self::Error> { Ok(self.data.get(id)) }
+    fn get(&self, id: &<Message<I, A, C> as Identifiable>::Id) -> Result<Option<&Message<I, A, C>>, Self::Error> { Ok(self.data.get(id)) }
 
     #[inline]
-    fn iter(&self) -> Result<impl Iterator<Item = &Self::Elem>, Self::Error> { Ok(self.data.values()) }
+    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s Message<I, A, C>>, Self::Error>
+    where
+        Message<I, A, C>: 's,
+    {
+        Ok(self.data.values())
+    }
 }
-impl<I: Clone + Eq + Hash, A, C> SetMut for MessageSet<I, A, C> {
+impl<I: Clone + Eq + Hash, A, C> SetMut<Message<I, A, C>> for MessageSet<I, A, C> {
     #[inline]
-    fn insert(&mut self, elem: Self::Elem) -> Result<Option<Self::Elem>, Self::Error> { Ok(self.data.insert(elem.id().clone(), elem)) }
+    fn insert(&mut self, elem: Message<I, A, C>) -> Result<Option<Message<I, A, C>>, Self::Error> { Ok(self.data.insert(elem.id().clone(), elem)) }
 
     #[inline]
-    fn get_mut(&mut self, id: &<Self::Elem as Identifiable>::Id) -> Result<Option<&mut Self::Elem>, Self::Error> { Ok(self.data.get_mut(id)) }
+    fn get_mut(&mut self, id: &<Message<I, A, C> as Identifiable>::Id) -> Result<Option<&mut Message<I, A, C>>, Self::Error> {
+        Ok(self.data.get_mut(id))
+    }
 
     #[inline]
-    fn remove(&mut self, id: &<Self::Elem as Identifiable>::Id) -> Result<Option<Self::Elem>, Self::Error> { Ok(self.data.remove(id)) }
+    fn remove(&mut self, id: &<Message<I, A, C> as Identifiable>::Id) -> Result<Option<Message<I, A, C>>, Self::Error> { Ok(self.data.remove(id)) }
 
     #[inline]
-    fn iter_mut(&mut self) -> Result<impl Iterator<Item = &mut Self::Elem>, Self::Error> { Ok(self.data.values_mut()) }
+    fn iter_mut<'s>(&'s mut self) -> Result<impl Iterator<Item = &'s mut Message<I, A, C>>, Self::Error>
+    where
+        Message<I, A, C>: 's,
+    {
+        Ok(self.data.values_mut())
+    }
 }
 impl<I, A, C: Extractable> Extractable for MessageSet<I, A, C> {
     type Policy = C::Policy;

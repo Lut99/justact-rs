@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 17:11:17
 //  Last edited:
-//    11 Dec 2024, 15:38:18
+//    12 Dec 2024, 12:51:27
 //  Auto updated?
 //    Yes
 //
@@ -23,7 +23,7 @@ use crate::agreements::Agreement;
 use crate::messages::{Message, MessageSet};
 use crate::policies::{Extractable, Policy};
 use crate::sets::{InfallibleSet, Set, SetMut};
-use crate::times::Times;
+use crate::times::{Times, Timestamp};
 
 
 /***** ERRORS *****/
@@ -102,13 +102,7 @@ pub struct View<T, A, S, E> {
     /// The set of actions that have been enacted (and visible to this agent!).
     pub enacted: E,
 }
-impl<T, A, S, E, MI, MA, MC, MT> View<T, A, S, E>
-where
-    A: Set<Elem = Agreement<MI, MA, MC, MT>>,
-    S: Set<Elem = Message<MI, MA, MC>>,
-    E: Set<Elem = Action<MI, MA, MC, MT>>,
-    MI: Eq + Hash,
-{
+impl<T, A, S, E> View<T, A, S, E> {
     /// Returns a message with a particular ID across all statements in this view.
     ///
     /// This searches not just the statements in [`View::stated`], but also those embedded in
@@ -124,9 +118,12 @@ where
     /// This function can error if any of the agreements or statements sets errors when an element
     /// is being retrieved. In addition, the enacted set may throw an error if iterating over it
     /// failed.
-    pub fn get_statement<'s>(&'s self, id: &MI) -> Result<Option<&'s Message<MI, MA, MC>>, Error<MI, A::Error, S::Error, E::Error>>
+    pub fn get_statement<'s, MI, MA, MC, MT>(&'s self, id: &MI) -> Result<Option<&'s Message<MI, MA, MC>>, Error<MI, A::Error, S::Error, E::Error>>
     where
-        MI: Clone,
+        A: Set<Agreement<MI, MA, MC, MT>>,
+        S: Set<Message<MI, MA, MC>>,
+        E: Set<Action<MI, MA, MC, MT>>,
+        MI: Clone + Eq + Hash,
         MT: 's,
     {
         match self.agreed.get(id) {
@@ -141,12 +138,12 @@ where
         }
         for act in self.enacted.iter().map_err(|err| Error::StatementGet { id: id.clone(), err: OneOfSetError::Enactments(err) })? {
             // Try the basis first
-            if let Some(msg) = <Agreement<MI, MA, MC, MT> as InfallibleSet>::get(&act.basis, id) {
+            if let Some(msg) = <Agreement<MI, MA, MC, MT> as InfallibleSet<Message<MI, MA, MC>>>::get(&act.basis, id) {
                 return Ok(Some(msg));
             }
 
             // Then the justification
-            if let Some(msg) = <MessageSet<MI, MA, MC> as InfallibleSet>::get(&act.justification, id) {
+            if let Some(msg) = <MessageSet<MI, MA, MC> as InfallibleSet<Message<MI, MA, MC>>>::get(&act.justification, id) {
                 return Ok(Some(msg));
             }
         }
@@ -164,11 +161,15 @@ where
     ///
     /// # Errors
     /// This function can error if any of the nested sets errors when their iterator is being constructed.
-    pub fn statements<'s>(&'s self) -> Result<impl Iterator<Item = &'s Message<MI, MA, MC>>, Error<MI, A::Error, S::Error, E::Error>>
+    pub fn statements<'s, MI, MA, MC, MT>(&'s self) -> Result<impl Iterator<Item = &'s Message<MI, MA, MC>>, Error<MI, A::Error, S::Error, E::Error>>
     where
-        MI: 's,
+        A: Set<Agreement<MI, MA, MC, MT>>,
+        S: Set<Message<MI, MA, MC>>,
+        E: Set<Action<MI, MA, MC, MT>>,
+        MI: 's + Eq + Hash,
         MA: 's,
         MC: 's,
+        MT: 's,
     {
         let aiter = self.agreed.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Agreements(err) })?.map(|a| &a.message);
         let siter = self.stated.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Statements(err) })?;
@@ -176,7 +177,7 @@ where
             .enacted
             .iter()
             .map_err(|err| Error::StatementsIter { err: OneOfSetError::Enactments(err) })?
-            .flat_map(|e| <MessageSet<MI, MA, MC> as InfallibleSet>::iter(&e.justification));
+            .flat_map(|e| <MessageSet<MI, MA, MC> as InfallibleSet<Message<MI, MA, MC>>>::iter(&e.justification));
         Ok(aiter.chain(siter).chain(eiter))
     }
 }
@@ -199,13 +200,13 @@ pub trait Runtime {
     /// Defines the policy extracted from messages.
     type Policy: Policy;
     /// Defines the set of synchronized times.
-    type Times: SetMut + Times<Timestamp = Self::Timestamp>;
+    type Times: SetMut<Timestamp<Self::Timestamp>> + Times<Timestamp = Self::Timestamp>;
     /// Defines the set of synchronized agreements.
-    type Agreements: SetMut<Elem = Agreement<Self::Id, Self::AgentId, Self::Contents, Self::Timestamp>>;
+    type Agreements: SetMut<Agreement<Self::Id, Self::AgentId, Self::Contents, Self::Timestamp>>;
     /// Defines the set of statements.
-    type Statements: SetMut<Elem = Message<Self::Id, Self::AgentId, Self::Contents>>;
+    type Statements: SetMut<Message<Self::Id, Self::AgentId, Self::Contents>>;
     /// Defines the set of enacted actions.
-    type Enactments: SetMut<Elem = Action<Self::Id, Self::AgentId, Self::Contents, Self::Timestamp>>;
+    type Enactments: SetMut<Action<Self::Id, Self::AgentId, Self::Contents, Self::Timestamp>>;
     /// Any errors thrown by the runtime.
     type Error: error::Error;
 

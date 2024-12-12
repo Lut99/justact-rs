@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    11 Dec 2024, 16:11:57
+//    12 Dec 2024, 12:57:54
 //  Auto updated?
 //    Yes
 //
@@ -14,11 +14,17 @@
 
 use std::error::Error;
 
-use crate::auxillary::Identifiable;
+use crate::auxillary::{Effectored, Identifiable};
 use crate::sets::InfallibleSet;
 
 
 /***** LIBRARY *****/
+/// Defines how a single effect in the policy's [`Denotation`] looks like.
+///
+/// Effects are like truths, but have an additional effector agent that does
+/// them. As such, they are also identified by facts.
+pub trait Effect: Effectored + Truth {}
+
 /// Defines how a single truth in the policy's [`Denotation`] looks like.
 ///
 /// Truths are identifiable by facts. This is represented by
@@ -50,7 +56,9 @@ pub trait Truth: Identifiable {
 /// Defines how the interpretation of a snippet of policy looks like.
 ///
 /// TODO: Integrate effects somehow.
-pub trait Denotation: InfallibleSet<Elem = Self::Truth> {
+pub trait Denotation: InfallibleSet<Self::Effect> + InfallibleSet<Self::Truth> {
+    /// The shape of effects that can be inferred from a policy.
+    type Effect: Effect;
     /// The shape of truth that can be inferred from a policy.
     type Truth: Truth;
 
@@ -72,7 +80,7 @@ pub trait Denotation: InfallibleSet<Elem = Self::Truth> {
     /// In some semantics, logical conflicts collapse to a special error or unknown value. This can
     /// be communicated by returning [`None`].
     fn truth_of(&self, fact: &<Self::Truth as Identifiable>::Id) -> Option<bool> {
-        <Self as InfallibleSet>::get(self, fact).and_then(Self::Truth::value).or_else(|| Some(false))
+        <Self as InfallibleSet<Self::Truth>>::get(self, fact).and_then(Self::Truth::value).or_else(|| Some(false))
     }
 }
 
