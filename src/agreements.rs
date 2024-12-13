@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 10:07:55
 //  Last edited:
-//    12 Dec 2024, 12:49:24
+//    13 Dec 2024, 11:23:21
 //  Auto updated?
 //    Yes
 //
@@ -39,13 +39,13 @@ impl<I, A: Eq + Hash, C, T> Authored for Agreement<I, A, C, T> {
     #[inline]
     fn author_id(&self) -> &Self::AuthorId { self.message.author_id() }
 }
-impl<I: Eq + Hash, A, C, T> Identifiable for Agreement<I, A, C, T> {
+impl<I: Eq + Hash, A: Eq + Hash, C, T> Identifiable for Agreement<I, A, C, T> {
     type Id = <Message<I, A, C> as Identifiable>::Id;
 
     #[inline]
     fn id(&self) -> &Self::Id { self.message.id() }
 }
-impl<I: Eq + Hash, A, C, T> Set<Message<I, A, C>> for Agreement<I, A, C, T> {
+impl<I: Eq + Hash, A: Eq + Hash, C, T> Set<Message<I, A, C>> for Agreement<I, A, C, T> {
     type Error = <Message<I, A, C> as Set<Message<I, A, C>>>::Error;
 
     #[inline]

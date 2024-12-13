@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    12 Dec 2024, 12:49:04
+//    13 Dec 2024, 11:22:58
 //  Auto updated?
 //    Yes
 //
@@ -30,16 +30,33 @@ use crate::sets::{Set, SetMut};
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Message<I, A, C> {
     /// The identifier of the message.
-    pub id: I,
-    /// The author of the message.
-    pub author_id: A,
+    ///
+    /// This identifier uses the famous "prefix trick", which essentially ensures that all message
+    /// identifiers are namespace'd by the message's author.
+    pub id: (A, I),
     /// The contents of the message.
     pub contents: C,
 }
 
+// Message-specific impls
+impl<I: Clone + Eq + Hash, A: Clone + Eq + Hash, C> Message<I, A, C> {
+    /// Creates a true set out of this Message.
+    ///
+    /// Message already implements [`Set`] for cases where access to an immutable set sufficies.
+    /// However, because the memory structure would not support zero or more than one messages, it
+    /// has no mutable implementation. As such, you can wrap this Message into a [`MessageSet`] to
+    /// unlock those powers.
+    ///
+    /// Mind you, this does allocation and moving of memory to make it happen.
+    ///
+    /// # Returns
+    /// A [`MessageSet`] with exactly `self` as element.
+    pub fn into_set(self) -> MessageSet<I, A, C> { MessageSet { data: HashMap::from([(self.id.clone(), self)]) } }
+}
+
 // Justact impls
-impl<I: Eq + Hash, A, C> Identifiable for Message<I, A, C> {
-    type Id = I;
+impl<I: Eq + Hash, A: Eq + Hash, C> Identifiable for Message<I, A, C> {
+    type Id = (A, I);
 
     #[inline]
     fn id(&self) -> &Self::Id { &self.id }
@@ -48,9 +65,9 @@ impl<I, A: Eq + Hash, C> Authored for Message<I, A, C> {
     type AuthorId = A;
 
     #[inline]
-    fn author_id(&self) -> &Self::AuthorId { &self.author_id }
+    fn author_id(&self) -> &Self::AuthorId { &self.id.0 }
 }
-impl<I: Eq + Hash, A, C> Set<Self> for Message<I, A, C> {
+impl<I: Eq + Hash, A: Eq + Hash, C> Set<Self> for Message<I, A, C> {
     type Error = Infallible;
 
     #[inline]
@@ -59,7 +76,7 @@ impl<I: Eq + Hash, A, C> Set<Self> for Message<I, A, C> {
     #[inline]
     fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s Self>, Self::Error>
     where
-        Self: 's,
+        Self: 's + Identifiable,
     {
         Ok(Some(self).into_iter())
     }
@@ -79,11 +96,11 @@ impl<I, A, C: Extractable> Extractable for Message<I, A, C> {
 #[derive(Clone, Debug)]
 pub struct MessageSet<I, A, C> {
     /// The messages.
-    data: HashMap<I, Message<I, A, C>>,
+    data: HashMap<(A, I), Message<I, A, C>>,
 }
 
 // Justact impls
-impl<I: Eq + Hash, A, C> Set<Message<I, A, C>> for MessageSet<I, A, C> {
+impl<I: Eq + Hash, A: Eq + Hash, C> Set<Message<I, A, C>> for MessageSet<I, A, C> {
     type Error = Infallible;
 
     #[inline]
@@ -97,7 +114,7 @@ impl<I: Eq + Hash, A, C> Set<Message<I, A, C>> for MessageSet<I, A, C> {
         Ok(self.data.values())
     }
 }
-impl<I: Clone + Eq + Hash, A, C> SetMut<Message<I, A, C>> for MessageSet<I, A, C> {
+impl<I: Clone + Eq + Hash, A: Clone + Eq + Hash, C> SetMut<Message<I, A, C>> for MessageSet<I, A, C> {
     #[inline]
     fn insert(&mut self, elem: Message<I, A, C>) -> Result<Option<Message<I, A, C>>, Self::Error> { Ok(self.data.insert(elem.id().clone(), elem)) }
 

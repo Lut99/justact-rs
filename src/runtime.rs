@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 17:11:17
 //  Last edited:
-//    12 Dec 2024, 12:51:27
+//    13 Dec 2024, 11:24:38
 //  Auto updated?
 //    Yes
 //
@@ -60,13 +60,13 @@ impl<EA: error::Error, ES: error::Error, EE: error::Error> error::Error for OneO
 
 /// Defines errors that originate from the [`View`].
 #[derive(Debug)]
-pub enum Error<I, EA, ES, EE> {
+pub enum Error<I, A, EA, ES, EE> {
     /// Failed to get a particular statement.
-    StatementGet { id: I, err: OneOfSetError<EA, ES, EE> },
+    StatementGet { id: (A, I), err: OneOfSetError<EA, ES, EE> },
     /// Failed to create an iterator over all statements.
     StatementsIter { err: OneOfSetError<EA, ES, EE> },
 }
-impl<I: Debug, EA, ES, EE> Display for Error<I, EA, ES, EE> {
+impl<I: Debug, A: Debug, EA, ES, EE> Display for Error<I, A, EA, ES, EE> {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FResult {
         match self {
@@ -75,7 +75,9 @@ impl<I: Debug, EA, ES, EE> Display for Error<I, EA, ES, EE> {
         }
     }
 }
-impl<I: Debug, EA: 'static + error::Error, ES: 'static + error::Error, EE: 'static + error::Error> error::Error for Error<I, EA, ES, EE> {
+impl<I: Debug, A: Debug, EA: 'static + error::Error, ES: 'static + error::Error, EE: 'static + error::Error> error::Error
+    for Error<I, A, EA, ES, EE>
+{
     #[inline]
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match self {
@@ -118,12 +120,16 @@ impl<T, A, S, E> View<T, A, S, E> {
     /// This function can error if any of the agreements or statements sets errors when an element
     /// is being retrieved. In addition, the enacted set may throw an error if iterating over it
     /// failed.
-    pub fn get_statement<'s, MI, MA, MC, MT>(&'s self, id: &MI) -> Result<Option<&'s Message<MI, MA, MC>>, Error<MI, A::Error, S::Error, E::Error>>
+    pub fn get_statement<'s, MI, MA, MC, MT>(
+        &'s self,
+        id: &(MA, MI),
+    ) -> Result<Option<&'s Message<MI, MA, MC>>, Error<MI, MA, A::Error, S::Error, E::Error>>
     where
         A: Set<Agreement<MI, MA, MC, MT>>,
         S: Set<Message<MI, MA, MC>>,
         E: Set<Action<MI, MA, MC, MT>>,
         MI: Clone + Eq + Hash,
+        MA: Clone + Eq + Hash,
         MT: 's,
     {
         match self.agreed.get(id) {
@@ -161,13 +167,15 @@ impl<T, A, S, E> View<T, A, S, E> {
     ///
     /// # Errors
     /// This function can error if any of the nested sets errors when their iterator is being constructed.
-    pub fn statements<'s, MI, MA, MC, MT>(&'s self) -> Result<impl Iterator<Item = &'s Message<MI, MA, MC>>, Error<MI, A::Error, S::Error, E::Error>>
+    pub fn statements<'s, MI, MA, MC, MT>(
+        &'s self,
+    ) -> Result<impl Iterator<Item = &'s Message<MI, MA, MC>>, Error<MI, MA, A::Error, S::Error, E::Error>>
     where
         A: Set<Agreement<MI, MA, MC, MT>>,
         S: Set<Message<MI, MA, MC>>,
         E: Set<Action<MI, MA, MC, MT>>,
         MI: 's + Eq + Hash,
-        MA: 's,
+        MA: 's + Eq + Hash,
         MC: 's,
         MT: 's,
     {
