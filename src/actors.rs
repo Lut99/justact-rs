@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:00:07
 //  Last edited:
-//    12 Dec 2024, 12:47:20
+//    13 Dec 2024, 13:40:05
 //  Auto updated?
 //    Yes
 //
@@ -60,12 +60,14 @@ pub trait Agent: Identifiable {
     /// A [`Poll`] which, can either:
     /// - be [`Poll::Ready`], indicating the agent has no more work to do (and can be deleted); or
     /// - a [`Poll::Pending`], indicating the agent wants to stick around.
-    fn poll<T, A, S, E, MI, MA, MC, MT>(&mut self, view: View<T, A, S, E>) -> Result<Poll<()>, Self::Error>
+    fn poll<T, A, S, E, SM, SA>(&mut self, view: View<T, A, S, E>) -> Result<Poll<()>, Self::Error>
     where
         T: Times,
-        A: Set<Agreement<MI, MA, MC, MT>>,
-        S: SetMut<Message<MI, MA, MC>>,
-        E: SetMut<Action<MI, MA, MC, MT>>;
+        A: Set<Agreement<SM, T::Timestamp>>,
+        S: SetMut<SM>,
+        E: SetMut<SA>,
+        SM: Message,
+        SA: Action;
 }
 
 
@@ -101,10 +103,12 @@ pub trait Synchronizer: Identifiable {
     /// A [`ControlFlow`] which, can either:
     /// - be [`ControlFlow::Continue`], indicating the runtime should continue; or
     /// - a [`ControlFlow::Break`], indicating the system should stop.
-    fn poll<T, A, S, E, MI, MA, MC, MT>(&mut self, view: View<T, A, S, E>) -> Result<ControlFlow<()>, Self::Error>
+    fn poll<T, A, S, E, SM, SA>(&mut self, view: View<T, A, S, E>) -> Result<ControlFlow<()>, Self::Error>
     where
-        T: SetMut<Timestamp<MT>> + Times,
-        A: SetMut<Agreement<MI, MA, MC, MT>>,
-        S: Set<Message<MI, MA, MC>>,
-        E: Set<Action<MI, MA, MC, MT>>;
+        T: SetMut<Timestamp<T::Timestamp>> + Times,
+        A: SetMut<Agreement<SM, T::Timestamp>>,
+        S: SetMut<SM>,
+        E: SetMut<SA>,
+        SM: Message,
+        SA: Action;
 }

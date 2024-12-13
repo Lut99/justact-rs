@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 10:07:55
 //  Last edited:
-//    13 Dec 2024, 11:23:21
+//    13 Dec 2024, 11:58:13
 //  Auto updated?
 //    Yes
 //
@@ -13,7 +13,7 @@
 //!   everybody.
 //
 
-use std::hash::Hash;
+use std::convert::Infallible;
 
 use crate::auxillary::{Authored, Identifiable, Timed};
 use crate::messages::Message;
@@ -25,49 +25,54 @@ use crate::times::Timestamp;
 /***** LIBRARY *****/
 /// Newtype for a message that everybody agreed upon.
 #[derive(Clone, Copy, Debug)]
-pub struct Agreement<I, A, C, T> {
+pub struct Agreement<M, T> {
     /// The message embedded in this agreement.
-    pub message: Message<I, A, C>,
+    pub message: M,
     /// The timestamp at which this agreement is valid.
     pub at:      Timestamp<T>,
 }
 
 // JustAct
-impl<I, A: Eq + Hash, C, T> Authored for Agreement<I, A, C, T> {
-    type AuthorId = <Message<I, A, C> as Authored>::AuthorId;
+impl<M: Authored, T> Authored for Agreement<M, T> {
+    type AuthorId = <M as Authored>::AuthorId;
 
     #[inline]
     fn author_id(&self) -> &Self::AuthorId { self.message.author_id() }
 }
-impl<I: Eq + Hash, A: Eq + Hash, C, T> Identifiable for Agreement<I, A, C, T> {
-    type Id = <Message<I, A, C> as Identifiable>::Id;
+impl<M: Identifiable, T> Identifiable for Agreement<M, T> {
+    type Id = <M as Identifiable>::Id;
 
     #[inline]
     fn id(&self) -> &Self::Id { self.message.id() }
 }
-impl<I: Eq + Hash, A: Eq + Hash, C, T> Set<Message<I, A, C>> for Agreement<I, A, C, T> {
-    type Error = <Message<I, A, C> as Set<Message<I, A, C>>>::Error;
+impl<M: Identifiable, T> Set<M> for Agreement<M, T> {
+    type Error = Infallible;
 
     #[inline]
-    fn get(&self, id: &<Message<I, A, C> as Identifiable>::Id) -> Result<Option<&Message<I, A, C>>, Self::Error> { self.message.get(id) }
+    fn get(&self, id: &<M as Identifiable>::Id) -> Result<Option<&M>, Self::Error> {
+        if self.message.id() == id { Ok(Some(&self.message)) } else { Ok(None) }
+    }
 
     #[inline]
-    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s Message<I, A, C>>, Self::Error>
+    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s M>, Self::Error>
     where
-        Message<I, A, C>: 's,
+        M: 's,
     {
-        self.message.iter()
+        Ok(Some(&self.message).into_iter())
     }
 }
-impl<I, A, C: Extractable, T> Extractable for Agreement<I, A, C, T> {
-    type Policy = <Message<I, A, C> as Extractable>::Policy;
-    type Error = <Message<I, A, C> as Extractable>::Error;
+impl<M: Message, T> Extractable for Agreement<M, T>
+where
+    M::Payload: Extractable,
+{
+    type Policy = <M::Payload as Extractable>::Policy;
+    type Error = <M::Payload as Extractable>::Error;
 
 
     #[inline]
-    fn extract(&self) -> Result<Self::Policy, Self::Error> { self.message.extract() }
+    fn extract(&self) -> Result<Self::Policy, Self::Error> { self.message.payload().extract() }
 }
-impl<I, A, C, T: Eq + Ord> Timed for Agreement<I, A, C, T> {
+impl<M, T: Eq + Ord> Timed for Agreement<M, T> {
     type Timestamp = T;
 
     #[inline]

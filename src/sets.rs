@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 10:40:27
 //  Last edited:
-//    12 Dec 2024, 12:48:27
+//    13 Dec 2024, 14:04:24
 //  Auto updated?
 //    Yes
 //
@@ -15,6 +15,8 @@
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::error::Error;
+use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::auxillary::Identifiable;
 
@@ -288,6 +290,63 @@ impl<'a, E, T: Set<E>> Set<E> for &'a mut T {
         <T as Set<E>>::iter(self)
     }
 }
+impl<E, T: Set<E>> Set<E> for Box<T> {
+    type Error = T::Error;
+
+    #[inline]
+    fn get(&self, id: &<E as Identifiable>::Id) -> Result<Option<&E>, Self::Error>
+    where
+        E: Identifiable,
+    {
+        <T as Set<E>>::get(self, id)
+    }
+
+    #[inline]
+    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s E>, Self::Error>
+    where
+        E: 's + Identifiable,
+    {
+        <T as Set<E>>::iter(self)
+    }
+}
+impl<E, T: Set<E>> Set<E> for Rc<T> {
+    type Error = T::Error;
+
+    #[inline]
+    fn get(&self, id: &<E as Identifiable>::Id) -> Result<Option<&E>, Self::Error>
+    where
+        E: Identifiable,
+    {
+        <T as Set<E>>::get(self, id)
+    }
+
+    #[inline]
+    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s E>, Self::Error>
+    where
+        E: 's + Identifiable,
+    {
+        <T as Set<E>>::iter(self)
+    }
+}
+impl<E, T: Set<E>> Set<E> for Arc<T> {
+    type Error = T::Error;
+
+    #[inline]
+    fn get(&self, id: &<E as Identifiable>::Id) -> Result<Option<&E>, Self::Error>
+    where
+        E: Identifiable,
+    {
+        <T as Set<E>>::get(self, id)
+    }
+
+    #[inline]
+    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s E>, Self::Error>
+    where
+        E: 's + Identifiable,
+    {
+        <T as Set<E>>::iter(self)
+    }
+}
 
 
 
@@ -447,6 +506,39 @@ where
 
 // Default impls for pointer-like types.
 impl<'a, E, T: SetMut<E>> SetMut<E> for &'a mut T {
+    #[inline]
+    fn insert(&mut self, elem: E) -> Result<Option<E>, Self::Error>
+    where
+        E: Identifiable,
+    {
+        <T as SetMut<E>>::insert(self, elem)
+    }
+
+    #[inline]
+    fn get_mut(&mut self, id: &<E as Identifiable>::Id) -> Result<Option<&mut E>, Self::Error>
+    where
+        E: Identifiable,
+    {
+        <T as SetMut<E>>::get_mut(self, id)
+    }
+
+    #[inline]
+    fn remove(&mut self, id: &<E as Identifiable>::Id) -> Result<Option<E>, Self::Error>
+    where
+        E: Identifiable,
+    {
+        <T as SetMut<E>>::remove(self, id)
+    }
+
+    #[inline]
+    fn iter_mut<'s>(&'s mut self) -> Result<impl Iterator<Item = &'s mut E>, Self::Error>
+    where
+        E: 's + Identifiable,
+    {
+        <T as SetMut<E>>::iter_mut(self)
+    }
+}
+impl<E, T: SetMut<E>> SetMut<E> for Box<T> {
     #[inline]
     fn insert(&mut self, elem: E) -> Result<Option<E>, Self::Error>
     where

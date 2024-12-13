@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 17:11:17
 //  Last edited:
-//    13 Dec 2024, 11:24:38
+//    13 Dec 2024, 13:55:18
 //  Auto updated?
 //    Yes
 //
@@ -15,13 +15,12 @@
 
 use std::error;
 use std::fmt::{Debug, Display, Formatter, Result as FResult};
-use std::hash::Hash;
 
 use crate::actions::Action;
 use crate::actors::{Agent, Synchronizer};
 use crate::agreements::Agreement;
+use crate::auxillary::{Authored, Identifiable};
 use crate::messages::{Message, MessageSet};
-use crate::policies::{Extractable, Policy};
 use crate::sets::{InfallibleSet, Set, SetMut};
 use crate::times::{Times, Timestamp};
 
@@ -60,13 +59,13 @@ impl<EA: error::Error, ES: error::Error, EE: error::Error> error::Error for OneO
 
 /// Defines errors that originate from the [`View`].
 #[derive(Debug)]
-pub enum Error<I, A, EA, ES, EE> {
+pub enum Error<I, EA, ES, EE> {
     /// Failed to get a particular statement.
-    StatementGet { id: (A, I), err: OneOfSetError<EA, ES, EE> },
+    StatementGet { id: I, err: OneOfSetError<EA, ES, EE> },
     /// Failed to create an iterator over all statements.
     StatementsIter { err: OneOfSetError<EA, ES, EE> },
 }
-impl<I: Debug, A: Debug, EA, ES, EE> Display for Error<I, A, EA, ES, EE> {
+impl<I: Debug, EA, ES, EE> Display for Error<I, EA, ES, EE> {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FResult {
         match self {
@@ -75,9 +74,7 @@ impl<I: Debug, A: Debug, EA, ES, EE> Display for Error<I, A, EA, ES, EE> {
         }
     }
 }
-impl<I: Debug, A: Debug, EA: 'static + error::Error, ES: 'static + error::Error, EE: 'static + error::Error> error::Error
-    for Error<I, A, EA, ES, EE>
-{
+impl<I: Debug, EA: 'static + error::Error, ES: 'static + error::Error, EE: 'static + error::Error> error::Error for Error<I, EA, ES, EE> {
     #[inline]
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match self {
@@ -120,17 +117,15 @@ impl<T, A, S, E> View<T, A, S, E> {
     /// This function can error if any of the agreements or statements sets errors when an element
     /// is being retrieved. In addition, the enacted set may throw an error if iterating over it
     /// failed.
-    pub fn get_statement<'s, MI, MA, MC, MT>(
-        &'s self,
-        id: &(MA, MI),
-    ) -> Result<Option<&'s Message<MI, MA, MC>>, Error<MI, MA, A::Error, S::Error, E::Error>>
+    pub fn get_statement<'s, SM, SA>(&'s self, id: &SM::Id) -> Result<Option<&'s SM>, Error<SM::Id, A::Error, S::Error, E::Error>>
     where
-        A: Set<Agreement<MI, MA, MC, MT>>,
-        S: Set<Message<MI, MA, MC>>,
-        E: Set<Action<MI, MA, MC, MT>>,
-        MI: Clone + Eq + Hash,
-        MA: Clone + Eq + Hash,
-        MT: 's,
+        T: Times,
+        A: Set<Agreement<SM, T::Timestamp>>,
+        S: Set<SM>,
+        E: Set<SA>,
+        SM: Authored + Identifiable,
+        SM::Id: Clone,
+        SA: 's + Action<Message = SM, Timestamp = T::Timestamp>,
     {
         match self.agreed.get(id) {
             Ok(Some(agree)) => return Ok(Some(&agree.message)),
@@ -144,12 +139,12 @@ impl<T, A, S, E> View<T, A, S, E> {
         }
         for act in self.enacted.iter().map_err(|err| Error::StatementGet { id: id.clone(), err: OneOfSetError::Enactments(err) })? {
             // Try the basis first
-            if let Some(msg) = <Agreement<MI, MA, MC, MT> as InfallibleSet<Message<MI, MA, MC>>>::get(&act.basis, id) {
+            if let Some(msg) = <Agreement<SM, T::Timestamp> as InfallibleSet<SM>>::get(act.basis(), id) {
                 return Ok(Some(msg));
             }
 
             // Then the justification
-            if let Some(msg) = <MessageSet<MI, MA, MC> as InfallibleSet<Message<MI, MA, MC>>>::get(&act.justification, id) {
+            if let Some(msg) = <MessageSet<SM> as InfallibleSet<SM>>::get(act.justification(), id) {
                 return Ok(Some(msg));
             }
         }
@@ -167,25 +162,20 @@ impl<T, A, S, E> View<T, A, S, E> {
     ///
     /// # Errors
     /// This function can error if any of the nested sets errors when their iterator is being constructed.
-    pub fn statements<'s, MI, MA, MC, MT>(
-        &'s self,
-    ) -> Result<impl Iterator<Item = &'s Message<MI, MA, MC>>, Error<MI, MA, A::Error, S::Error, E::Error>>
+    pub fn statements<'s, SM, SA>(&'s self) -> Result<impl Iterator<Item = &'s SM>, Error<SM::Id, A::Error, S::Error, E::Error>>
     where
-        A: Set<Agreement<MI, MA, MC, MT>>,
-        S: Set<Message<MI, MA, MC>>,
-        E: Set<Action<MI, MA, MC, MT>>,
-        MI: 's + Eq + Hash,
-        MA: 's + Eq + Hash,
-        MC: 's,
-        MT: 's,
+        T: Times,
+        A: Set<Agreement<SM, T::Timestamp>>,
+        S: Set<SM>,
+        E: Set<SA>,
+        SM: 's + Identifiable,
+        SA: 's + Action<Message = SM, Timestamp = T::Timestamp>,
     {
         let aiter = self.agreed.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Agreements(err) })?.map(|a| &a.message);
         let siter = self.stated.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Statements(err) })?;
-        let eiter = self
-            .enacted
-            .iter()
-            .map_err(|err| Error::StatementsIter { err: OneOfSetError::Enactments(err) })?
-            .flat_map(|e| <MessageSet<MI, MA, MC> as InfallibleSet<Message<MI, MA, MC>>>::iter(&e.justification));
+        let eiter = self.enacted.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Enactments(err) })?.flat_map(|e| {
+            <Agreement<SM, T::Timestamp> as InfallibleSet<SM>>::iter(e.basis()).chain(<MessageSet<SM> as InfallibleSet<SM>>::iter(e.justification()))
+        });
         Ok(aiter.chain(siter).chain(eiter))
     }
 }
@@ -197,24 +187,20 @@ impl<T, A, S, E> View<T, A, S, E> {
 /***** LIBRARY *****/
 /// Defines the toplevel [`Runtime`], which brings the ontology together.
 pub trait Runtime {
-    /// Defines the type of message- and action identifiers.
-    type Id: Eq + Hash;
-    /// Defines the type of agent identifiers.
-    type AgentId: Eq + Hash;
-    /// Defines the contents of messages.
-    type Contents: Extractable;
-    /// Defines the representation of a timestamp.
-    type Timestamp: Eq + Ord;
-    /// Defines the policy extracted from messages.
-    type Policy: Policy;
+    /// Defines the type of messages in the runtime.
+    type Message: Message;
+    /// Defines the type of actions in the runtime.
+    type Action: Action<Message = Self::Message, Timestamp = <Self::Times as Times>::Timestamp>;
+
     /// Defines the set of synchronized times.
-    type Times: SetMut<Timestamp<Self::Timestamp>> + Times<Timestamp = Self::Timestamp>;
+    type Times: SetMut<Timestamp<<Self::Times as Times>::Timestamp>> + Times;
     /// Defines the set of synchronized agreements.
-    type Agreements: SetMut<Agreement<Self::Id, Self::AgentId, Self::Contents, Self::Timestamp>>;
+    type Agreements: SetMut<Agreement<Self::Message, <Self::Times as Times>::Timestamp>>;
     /// Defines the set of statements.
-    type Statements: SetMut<Message<Self::Id, Self::AgentId, Self::Contents>>;
+    type Statements: SetMut<Self::Message>;
     /// Defines the set of enacted actions.
-    type Enactments: SetMut<Action<Self::Id, Self::AgentId, Self::Contents, Self::Timestamp>>;
+    type Enactments: SetMut<Self::Action>;
+
     /// Any errors thrown by the runtime.
     type Error: error::Error;
 

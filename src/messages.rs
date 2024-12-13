@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    13 Dec 2024, 11:22:58
+//    13 Dec 2024, 14:00:56
 //  Auto updated?
 //    Yes
 //
@@ -14,10 +14,8 @@
 
 use std::collections::HashMap;
 use std::convert::Infallible;
-use std::hash::Hash;
-
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
+use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::auxillary::{Authored, Identifiable};
 use crate::policies::{Extractable, Policy};
@@ -26,124 +24,139 @@ use crate::sets::{Set, SetMut};
 
 /***** LIBRARY *****/
 /// Defines a single message.
-#[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct Message<I, A, C> {
-    /// The identifier of the message.
-    ///
-    /// This identifier uses the famous "prefix trick", which essentially ensures that all message
-    /// identifiers are namespace'd by the message's author.
-    pub id: (A, I),
-    /// The contents of the message.
-    pub contents: C,
-}
+///
+/// This is abstract, and now a concrete data structure, because runtimes may wants to decide how
+/// they structure the memory of the Message. In particular, messages might be
+/// [`Arc`](std::sync::Arc)'ed, and they might want to collide the ID and the author.
+pub trait Message: Authored + Identifiable {
+    /// Defines the type of content carried by this message.
+    type Payload: Extractable;
 
-// Message-specific impls
-impl<I: Clone + Eq + Hash, A: Clone + Eq + Hash, C> Message<I, A, C> {
-    /// Creates a true set out of this Message.
-    ///
-    /// Message already implements [`Set`] for cases where access to an immutable set sufficies.
-    /// However, because the memory structure would not support zero or more than one messages, it
-    /// has no mutable implementation. As such, you can wrap this Message into a [`MessageSet`] to
-    /// unlock those powers.
-    ///
-    /// Mind you, this does allocation and moving of memory to make it happen.
+
+    /// Returns the payload of this message.
     ///
     /// # Returns
-    /// A [`MessageSet`] with exactly `self` as element.
-    pub fn into_set(self) -> MessageSet<I, A, C> { MessageSet { data: HashMap::from([(self.id.clone(), self)]) } }
+    /// An immutable reference to the internal [`Message::Payload`].
+    fn payload(&self) -> &Self::Payload;
 }
 
-// Justact impls
-impl<I: Eq + Hash, A: Eq + Hash, C> Identifiable for Message<I, A, C> {
-    type Id = (A, I);
+// Pointer-like impls
+impl<'a, T: Message> Message for &'a T {
+    type Payload = T::Payload;
 
     #[inline]
-    fn id(&self) -> &Self::Id { &self.id }
+    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
 }
-impl<I, A: Eq + Hash, C> Authored for Message<I, A, C> {
-    type AuthorId = A;
+impl<'a, T: Message> Message for &'a mut T {
+    type Payload = T::Payload;
 
     #[inline]
-    fn author_id(&self) -> &Self::AuthorId { &self.id.0 }
+    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
 }
-impl<I: Eq + Hash, A: Eq + Hash, C> Set<Self> for Message<I, A, C> {
-    type Error = Infallible;
+impl<T: Message> Message for Box<T> {
+    type Payload = T::Payload;
 
     #[inline]
-    fn get(&self, id: &<Self as Identifiable>::Id) -> Result<Option<&Self>, Self::Error> { if &self.id == id { Ok(Some(self)) } else { Ok(None) } }
-
-    #[inline]
-    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s Self>, Self::Error>
-    where
-        Self: 's + Identifiable,
-    {
-        Ok(Some(self).into_iter())
-    }
+    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
 }
-impl<I, A, C: Extractable> Extractable for Message<I, A, C> {
-    type Policy = C::Policy;
-    type Error = C::Error;
-
+impl<T: Message> Message for Rc<T> {
+    type Payload = T::Payload;
 
     #[inline]
-    fn extract(&self) -> Result<Self::Policy, Self::Error> { <C as Extractable>::extract(&self.contents) }
+    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
+}
+impl<T: Message> Message for Arc<T> {
+    type Payload = T::Payload;
+
+    #[inline]
+    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
 }
 
 
 
 /// Defines a bunch of messages.
 #[derive(Clone, Debug)]
-pub struct MessageSet<I, A, C> {
+pub struct MessageSet<M: Identifiable> {
     /// The messages.
-    data: HashMap<(A, I), Message<I, A, C>>,
+    data: HashMap<M::Id, M>,
+}
+
+// Constructors
+impl<M: Identifiable> Default for MessageSet<M> {
+    #[inline]
+    fn default() -> Self { Self::new() }
+}
+impl<M: Identifiable> MessageSet<M> {
+    /// Constructor for the MessageSet that initializes it without elements.
+    ///
+    /// # Returns
+    /// A new MessageSet, ready to store messages.
+    #[inline]
+    pub fn new() -> Self { Self { data: HashMap::new() } }
+
+    /// Constructor for the MessageSet that initializes it without elements, but with the memory
+    /// capacity for at least a specified number.
+    ///
+    /// This is useful for when you are expecting to put some things in there so that you only have
+    /// to allocate once.
+    ///
+    /// # Arguments
+    /// - `capacity`: The minimum number of elements that the new set should be able to store
+    ///   before having to re-allocate. For optimization/alignment purposes, the actually reserved
+    ///   capacity may be higher (see [`HashMap::with_capacity()`]).
+    ///
+    /// # Returns
+    /// A new MessageSet, ready to store messages.
+    #[inline]
+    pub fn with_capacity(capacity: usize) -> Self { Self { data: HashMap::with_capacity(capacity) } }
 }
 
 // Justact impls
-impl<I: Eq + Hash, A: Eq + Hash, C> Set<Message<I, A, C>> for MessageSet<I, A, C> {
+impl<M: Identifiable> Set<M> for MessageSet<M> {
     type Error = Infallible;
 
     #[inline]
-    fn get(&self, id: &<Message<I, A, C> as Identifiable>::Id) -> Result<Option<&Message<I, A, C>>, Self::Error> { Ok(self.data.get(id)) }
+    fn get(&self, id: &<M as Identifiable>::Id) -> Result<Option<&M>, Self::Error> { Ok(self.data.get(id)) }
 
     #[inline]
-    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s Message<I, A, C>>, Self::Error>
+    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s M>, Self::Error>
     where
-        Message<I, A, C>: 's,
+        M: 's,
     {
         Ok(self.data.values())
     }
 }
-impl<I: Clone + Eq + Hash, A: Clone + Eq + Hash, C> SetMut<Message<I, A, C>> for MessageSet<I, A, C> {
+impl<M: Message> SetMut<M> for MessageSet<M>
+where
+    M::Id: Clone,
+{
     #[inline]
-    fn insert(&mut self, elem: Message<I, A, C>) -> Result<Option<Message<I, A, C>>, Self::Error> { Ok(self.data.insert(elem.id().clone(), elem)) }
+    fn insert(&mut self, elem: M) -> Result<Option<M>, Self::Error> { Ok(self.data.insert(elem.id().clone(), elem)) }
 
     #[inline]
-    fn get_mut(&mut self, id: &<Message<I, A, C> as Identifiable>::Id) -> Result<Option<&mut Message<I, A, C>>, Self::Error> {
-        Ok(self.data.get_mut(id))
-    }
+    fn get_mut(&mut self, id: &<M as Identifiable>::Id) -> Result<Option<&mut M>, Self::Error> { Ok(self.data.get_mut(id)) }
 
     #[inline]
-    fn remove(&mut self, id: &<Message<I, A, C> as Identifiable>::Id) -> Result<Option<Message<I, A, C>>, Self::Error> { Ok(self.data.remove(id)) }
+    fn remove(&mut self, id: &<M as Identifiable>::Id) -> Result<Option<M>, Self::Error> { Ok(self.data.remove(id)) }
 
     #[inline]
-    fn iter_mut<'s>(&'s mut self) -> Result<impl Iterator<Item = &'s mut Message<I, A, C>>, Self::Error>
+    fn iter_mut<'s>(&'s mut self) -> Result<impl Iterator<Item = &'s mut M>, Self::Error>
     where
-        Message<I, A, C>: 's,
+        M: 's,
     {
         Ok(self.data.values_mut())
     }
 }
-impl<I, A, C: Extractable> Extractable for MessageSet<I, A, C> {
-    type Policy = C::Policy;
-    type Error = C::Error;
+impl<M: Message> Extractable for MessageSet<M> {
+    type Policy = <M::Payload as Extractable>::Policy;
+    type Error = <M::Payload as Extractable>::Error;
 
 
     #[inline]
     fn extract(&self) -> Result<Self::Policy, Self::Error> {
-        let mut policy: C::Policy = Default::default();
+        let mut policy: <M::Payload as Extractable>::Policy = Default::default();
         for msg in self.data.values() {
-            policy.compose_mut(msg.contents.extract()?);
+            policy.compose_mut(msg.payload().extract()?);
         }
         Ok(policy)
     }
