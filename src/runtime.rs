@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 17:11:17
 //  Last edited:
-//    13 Dec 2024, 13:55:18
+//    16 Dec 2024, 15:27:45
 //  Auto updated?
 //    Yes
 //
@@ -15,6 +15,8 @@
 
 use std::error;
 use std::fmt::{Debug, Display, Formatter, Result as FResult};
+
+use auto_traits::pointer_impls;
 
 use crate::actions::Action;
 use crate::actors::{Agent, Synchronizer};
@@ -186,6 +188,7 @@ impl<T, A, S, E> View<T, A, S, E> {
 
 /***** LIBRARY *****/
 /// Defines the toplevel [`Runtime`], which brings the ontology together.
+#[pointer_impls]
 pub trait Runtime {
     /// Defines the type of messages in the runtime.
     type Message: Message;

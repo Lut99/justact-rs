@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:00:07
 //  Last edited:
-//    13 Dec 2024, 13:40:05
+//    16 Dec 2024, 15:27:23
 //  Auto updated?
 //    Yes
 //
@@ -18,6 +18,8 @@
 use std::error::Error;
 use std::ops::ControlFlow;
 use std::task::Poll;
+
+use auto_traits::pointer_impls;
 
 use crate::actions::Action;
 use crate::agreements::Agreement;
@@ -33,6 +35,7 @@ use crate::times::{Times, Timestamp};
 ///
 /// Agents are the main actors in the JustAct framework. They use information in all the sets
 /// (synchronized and otherwise) to publish new content in asynchronized sets they have access to.
+#[pointer_impls(T = U)]
 pub trait Agent: Identifiable {
     /// Any errors that this agent can throw during its execution.
     type Error: Error;
@@ -76,6 +79,7 @@ pub trait Agent: Identifiable {
 ///
 /// Synchronizers are a special kind of actors that have the power to update synchronized sets.
 /// Like agents, they may use information available in any kind of set to do so.
+#[pointer_impls(T = U)]
 pub trait Synchronizer: Identifiable {
     /// Any errors that this synchronizer can throw during its execution.
     type Error: Error;

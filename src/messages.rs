@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    13 Dec 2024, 14:00:56
+//    16 Dec 2024, 15:15:16
 //  Auto updated?
 //    Yes
 //
@@ -14,8 +14,8 @@
 
 use std::collections::HashMap;
 use std::convert::Infallible;
-use std::rc::Rc;
-use std::sync::Arc;
+
+use auto_traits::pointer_impls;
 
 use crate::auxillary::{Authored, Identifiable};
 use crate::policies::{Extractable, Policy};
@@ -28,6 +28,7 @@ use crate::sets::{Set, SetMut};
 /// This is abstract, and now a concrete data structure, because runtimes may wants to decide how
 /// they structure the memory of the Message. In particular, messages might be
 /// [`Arc`](std::sync::Arc)'ed, and they might want to collide the ID and the author.
+#[pointer_impls]
 pub trait Message: Authored + Identifiable {
     /// Defines the type of content carried by this message.
     type Payload: Extractable;
@@ -38,38 +39,6 @@ pub trait Message: Authored + Identifiable {
     /// # Returns
     /// An immutable reference to the internal [`Message::Payload`].
     fn payload(&self) -> &Self::Payload;
-}
-
-// Pointer-like impls
-impl<'a, T: Message> Message for &'a T {
-    type Payload = T::Payload;
-
-    #[inline]
-    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
-}
-impl<'a, T: Message> Message for &'a mut T {
-    type Payload = T::Payload;
-
-    #[inline]
-    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
-}
-impl<T: Message> Message for Box<T> {
-    type Payload = T::Payload;
-
-    #[inline]
-    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
-}
-impl<T: Message> Message for Rc<T> {
-    type Payload = T::Payload;
-
-    #[inline]
-    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
-}
-impl<T: Message> Message for Arc<T> {
-    type Payload = T::Payload;
-
-    #[inline]
-    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
 }
 
 

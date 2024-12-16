@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    12 Dec 2024, 13:00:31
+//    16 Dec 2024, 15:16:05
 //  Auto updated?
 //    Yes
 //
@@ -13,6 +13,8 @@
 //
 
 use std::error::Error;
+
+use auto_traits::pointer_impls;
 
 use crate::auxillary::{Affectored, Identifiable};
 use crate::sets::InfallibleSet;
@@ -23,12 +25,14 @@ use crate::sets::InfallibleSet;
 ///
 /// Effects are like truths, but have an additional effector agent that does
 /// them. As such, they are also identified by facts.
+#[pointer_impls]
 pub trait Effect: Affectored + Truth {}
 
 /// Defines how a single truth in the policy's [`Denotation`] looks like.
 ///
 /// Truths are identifiable by facts. This is represented by
 /// [`<Truth as Identifiable>::Id`](Identifiable::Id).
+#[pointer_impls]
 pub trait Truth: Identifiable {
     /// Returns the fact that is truth'ed by this Truth.
     ///
@@ -56,6 +60,7 @@ pub trait Truth: Identifiable {
 /// Defines how the interpretation of a snippet of policy looks like.
 ///
 /// TODO: Integrate effects somehow.
+#[pointer_impls]
 pub trait Denotation: InfallibleSet<Self::Effect> + InfallibleSet<Self::Truth> {
     /// The shape of effects that can be inferred from a policy.
     type Effect: Effect;
@@ -127,6 +132,7 @@ pub trait Policy: Default {
 
 
 /// Defines that something can extract policy.
+#[pointer_impls]
 pub trait Extractable {
     /// The policy extracted.
     type Policy: Policy;

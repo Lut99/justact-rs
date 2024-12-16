@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 14:57:21
 //  Last edited:
-//    12 Dec 2024, 12:43:19
+//    16 Dec 2024, 15:16:21
 //  Auto updated?
 //    Yes
 //
@@ -14,6 +14,8 @@
 //
 
 use std::hash::Hash;
+
+use auto_traits::pointer_impls;
 
 use crate::auxillary::{Identifiable, Timed};
 use crate::sets::Set;
@@ -43,6 +45,7 @@ impl<T: Eq + Hash> Identifiable for Timestamp<T> {
 
 /// Extends a [`Set`] of [`Timestamp`]s with functionality to see if an agreement is valid at this
 /// timestamp.
+#[pointer_impls]
 pub trait Times: Set<Timestamp<Self::Timestamp>> {
     /// The timestamp representation used in this set.
     type Timestamp: Eq + Hash + Ord;
