@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    16 Dec 2024, 15:16:05
+//    16 Dec 2024, 15:28:32
 //  Auto updated?
 //    Yes
 //
@@ -58,8 +58,6 @@ pub trait Truth: Identifiable {
 }
 
 /// Defines how the interpretation of a snippet of policy looks like.
-///
-/// TODO: Integrate effects somehow.
 #[pointer_impls]
 pub trait Denotation: InfallibleSet<Self::Effect> + InfallibleSet<Self::Truth> {
     /// The shape of effects that can be inferred from a policy.
