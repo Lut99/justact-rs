@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    16 Dec 2024, 15:28:32
+//    16 Dec 2024, 16:13:45
 //  Auto updated?
 //    Yes
 //
@@ -17,7 +17,8 @@ use std::error::Error;
 use auto_traits::pointer_impls;
 
 use crate::auxillary::{Affectored, Identifiable};
-use crate::sets::InfallibleSet;
+use crate::messages::Message;
+use crate::sets::{InfallibleSet, Set};
 
 
 /***** LIBRARY *****/
@@ -127,24 +128,28 @@ pub trait Policy: Default {
     fn compose_mut(&mut self, other: Self);
 }
 
-
-
 /// Defines that something can extract policy.
+///
+/// # Generics
+/// - `P`: Some kind of payload carried in messages that this extractor can retrieve it from.
 #[pointer_impls]
-pub trait Extractable {
+pub trait Extrator<P> {
     /// The policy extracted.
     type Policy: Policy;
     /// Any errors thrown if the policy in this object is unparseable.
     type Error: Error;
 
 
-    /// Extracts the policy from this object.
+    /// Extracts the policy from something iterating over messages.
+    ///
+    /// # Arguments
+    /// - `msgs`: A [`Set`] of messages that we will be extracting from.
     ///
     /// # Returns
-    /// An [`Extractable::Policy`] that describes the policy in this object.
+    /// An [`Extractable::Policy`] that describes the policy extracted from `msgs`.
     ///
     /// # Errors
     /// This function should error if and only if the policy contained in this object fails to
     /// parse.
-    fn extract(&self) -> Result<Self::Policy, Self::Error>;
+    fn extract<M: Message<Payload = P>>(&mut self, msgs: impl Set<M>) -> Result<Self::Policy, Self::Error>;
 }

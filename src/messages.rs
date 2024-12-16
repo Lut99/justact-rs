@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    16 Dec 2024, 15:58:08
+//    16 Dec 2024, 16:12:55
 //  Auto updated?
 //    Yes
 //
@@ -18,7 +18,6 @@ use std::convert::Infallible;
 use auto_traits::pointer_impls;
 
 use crate::auxillary::{Authored, Identifiable};
-use crate::policies::{Extractable, Policy};
 use crate::sets::{Set, SetMut};
 
 
@@ -31,7 +30,7 @@ use crate::sets::{Set, SetMut};
 #[pointer_impls]
 pub trait Message: Authored + Identifiable {
     /// Defines the type of content carried by this message.
-    type Payload: Extractable;
+    type Payload;
 
 
     /// Returns the payload of this message.
@@ -114,19 +113,5 @@ where
         M: 's,
     {
         Ok(self.data.values_mut())
-    }
-}
-impl<M: Message> Extractable for MessageSet<M> {
-    type Policy = <M::Payload as Extractable>::Policy;
-    type Error = <M::Payload as Extractable>::Error;
-
-
-    #[inline]
-    fn extract(&self) -> Result<Self::Policy, Self::Error> {
-        let mut policy: <M::Payload as Extractable>::Policy = Default::default();
-        for msg in self.data.values() {
-            policy.compose_mut(msg.payload().extract()?);
-        }
-        Ok(policy)
     }
 }

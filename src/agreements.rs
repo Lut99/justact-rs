@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 10:07:55
 //  Last edited:
-//    13 Dec 2024, 11:58:13
+//    16 Dec 2024, 16:13:07
 //  Auto updated?
 //    Yes
 //
@@ -16,8 +16,6 @@
 use std::convert::Infallible;
 
 use crate::auxillary::{Authored, Identifiable, Timed};
-use crate::messages::Message;
-use crate::policies::Extractable;
 use crate::sets::Set;
 use crate::times::Timestamp;
 
@@ -60,17 +58,6 @@ impl<M: Identifiable, T> Set<M> for Agreement<M, T> {
     {
         Ok(Some(&self.message).into_iter())
     }
-}
-impl<M: Message, T> Extractable for Agreement<M, T>
-where
-    M::Payload: Extractable,
-{
-    type Policy = <M::Payload as Extractable>::Policy;
-    type Error = <M::Payload as Extractable>::Error;
-
-
-    #[inline]
-    fn extract(&self) -> Result<Self::Policy, Self::Error> { self.message.payload().extract() }
 }
 impl<M, T: Eq + Ord> Timed for Agreement<M, T> {
     type Timestamp = T;
