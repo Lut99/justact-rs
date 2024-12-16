@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    16 Dec 2024, 16:13:45
+//    16 Dec 2024, 16:15:29
 //  Auto updated?
 //    Yes
 //
@@ -133,7 +133,7 @@ pub trait Policy: Default {
 /// # Generics
 /// - `P`: Some kind of payload carried in messages that this extractor can retrieve it from.
 #[pointer_impls]
-pub trait Extrator<P> {
+pub trait Extractor<P> {
     /// The policy extracted.
     type Policy: Policy;
     /// Any errors thrown if the policy in this object is unparseable.
