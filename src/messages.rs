@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    16 Dec 2024, 15:15:16
+//    16 Dec 2024, 15:58:08
 //  Auto updated?
 //    Yes
 //
@@ -25,7 +25,7 @@ use crate::sets::{Set, SetMut};
 /***** LIBRARY *****/
 /// Defines a single message.
 ///
-/// This is abstract, and now a concrete data structure, because runtimes may wants to decide how
+/// This is abstract, and not a concrete data structure, because runtimes may wants to decide how
 /// they structure the memory of the Message. In particular, messages might be
 /// [`Arc`](std::sync::Arc)'ed, and they might want to collide the ID and the author.
 #[pointer_impls]
