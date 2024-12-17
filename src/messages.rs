@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    17 Dec 2024, 15:46:56
+//    17 Dec 2024, 15:50:24
 //  Auto updated?
 //    Yes
 //
@@ -32,7 +32,7 @@ use crate::sets::{Set, SetMut};
 #[pointer_impls]
 pub trait Message: Authored + Identifiable {
     /// Defines the type of content carried by this message.
-    type Payload;
+    type Payload: ?Sized;
 
 
     /// Returns the payload of this message.
