@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 10:06:41
 //  Last edited:
-//    16 Dec 2024, 15:16:32
+//    17 Dec 2024, 15:47:28
 //  Auto updated?
 //    Yes
 //
@@ -42,5 +42,7 @@ pub trait Action: Actored + Identifiable + Timed {
     ///
     /// # Returns
     /// A [`MessageSet`] encoding the statements in the justification.
-    fn justification(&self) -> &MessageSet<Self::Message>;
+    fn justification(&self) -> &MessageSet<Self::Message>
+    where
+        <Self::Message as Identifiable>::Id: ToOwned;
 }

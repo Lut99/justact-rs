@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    16 Dec 2024, 16:12:55
+//    17 Dec 2024, 15:46:56
 //  Auto updated?
 //    Yes
 //
@@ -14,6 +14,8 @@
 
 use std::collections::HashMap;
 use std::convert::Infallible;
+use std::fmt::{Debug, Formatter, Result as FResult};
+use std::hash::Hash;
 
 use auto_traits::pointer_impls;
 
@@ -43,18 +45,54 @@ pub trait Message: Authored + Identifiable {
 
 
 /// Defines a bunch of messages.
-#[derive(Clone, Debug)]
-pub struct MessageSet<M: Identifiable> {
+pub struct MessageSet<M>
+where
+    M: Identifiable,
+    M::Id: ToOwned,
+{
     /// The messages.
-    data: HashMap<M::Id, M>,
+    data: HashMap<<M::Id as ToOwned>::Owned, M>,
+}
+
+// "Derived" impls
+impl<M> Clone for MessageSet<M>
+where
+    M: Clone + Identifiable,
+    M::Id: ToOwned,
+    <M::Id as ToOwned>::Owned: Clone,
+{
+    #[inline]
+    fn clone(&self) -> Self { Self { data: self.data.clone() } }
+}
+impl<M> Debug for MessageSet<M>
+where
+    M: Debug + Identifiable,
+    M::Id: ToOwned,
+    <M::Id as ToOwned>::Owned: Debug,
+{
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> FResult {
+        let Self { data } = self;
+        let mut fmt = f.debug_struct("MessageSet");
+        fmt.field("data", data);
+        fmt.finish()
+    }
 }
 
 // Constructors
-impl<M: Identifiable> Default for MessageSet<M> {
+impl<M> Default for MessageSet<M>
+where
+    M: Identifiable,
+    M::Id: ToOwned,
+{
     #[inline]
     fn default() -> Self { Self::new() }
 }
-impl<M: Identifiable> MessageSet<M> {
+impl<M: Identifiable> MessageSet<M>
+where
+    M: Identifiable,
+    M::Id: ToOwned,
+{
     /// Constructor for the MessageSet that initializes it without elements.
     ///
     /// # Returns
@@ -80,7 +118,12 @@ impl<M: Identifiable> MessageSet<M> {
 }
 
 // Justact impls
-impl<M: Identifiable> Set<M> for MessageSet<M> {
+impl<M> Set<M> for MessageSet<M>
+where
+    M: Identifiable,
+    M::Id: ToOwned,
+    <M::Id as ToOwned>::Owned: Eq + Hash,
+{
     type Error = Infallible;
 
     #[inline]
@@ -96,10 +139,12 @@ impl<M: Identifiable> Set<M> for MessageSet<M> {
 }
 impl<M: Message> SetMut<M> for MessageSet<M>
 where
-    M::Id: Clone,
+    M: Identifiable,
+    M::Id: ToOwned,
+    <M::Id as ToOwned>::Owned: Eq + Hash,
 {
     #[inline]
-    fn insert(&mut self, elem: M) -> Result<Option<M>, Self::Error> { Ok(self.data.insert(elem.id().clone(), elem)) }
+    fn insert(&mut self, elem: M) -> Result<Option<M>, Self::Error> { Ok(self.data.insert(elem.id().to_owned(), elem)) }
 
     #[inline]
     fn get_mut(&mut self, id: &<M as Identifiable>::Id) -> Result<Option<&mut M>, Self::Error> { Ok(self.data.get_mut(id)) }

@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 17:11:17
 //  Last edited:
-//    16 Dec 2024, 15:27:45
+//    17 Dec 2024, 15:48:46
 //  Auto updated?
 //    Yes
 //
@@ -15,6 +15,7 @@
 
 use std::error;
 use std::fmt::{Debug, Display, Formatter, Result as FResult};
+use std::hash::Hash;
 
 use auto_traits::pointer_impls;
 
@@ -164,13 +165,15 @@ impl<T, A, S, E> View<T, A, S, E> {
     ///
     /// # Errors
     /// This function can error if any of the nested sets errors when their iterator is being constructed.
-    pub fn statements<'s, SM, SA>(&'s self) -> Result<impl Iterator<Item = &'s SM>, Error<SM::Id, A::Error, S::Error, E::Error>>
+    pub fn statements<'s, SM, SA>(&'s self) -> Result<impl Iterator<Item = &'s SM>, Error<<SM::Id as ToOwned>::Owned, A::Error, S::Error, E::Error>>
     where
         T: Times,
         A: Set<Agreement<SM, T::Timestamp>>,
         S: Set<SM>,
         E: Set<SA>,
         SM: 's + Identifiable,
+        SM::Id: ToOwned,
+        <SM::Id as ToOwned>::Owned: Eq + Hash,
         SA: 's + Action<Message = SM, Timestamp = T::Timestamp>,
     {
         let aiter = self.agreed.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Agreements(err) })?.map(|a| &a.message);

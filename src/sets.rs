@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 10:40:27
 //  Last edited:
-//    16 Dec 2024, 15:15:00
+//    17 Dec 2024, 15:41:17
 //  Auto updated?
 //    Yes
 //
@@ -15,6 +15,7 @@
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::error::Error;
+use std::hash::Hash;
 
 use auto_traits::pointer_impls;
 
@@ -231,7 +232,12 @@ impl<T: Identifiable> Set<T> for Vec<T> {
         Ok(<[T]>::iter(self))
     }
 }
-impl<T: Identifiable> Set<T> for HashMap<T::Id, T> {
+impl<T: Identifiable> Set<T> for HashMap<<T::Id as ToOwned>::Owned, T>
+where
+    T: Identifiable,
+    T::Id: ToOwned,
+    <T::Id as ToOwned>::Owned: Eq + Hash,
+{
     type Error = Infallible;
 
 
@@ -240,7 +246,7 @@ impl<T: Identifiable> Set<T> for HashMap<T::Id, T> {
     where
         T: Identifiable,
     {
-        Ok(<Self>::get(self, id))
+        Ok(HashMap::get(self, id))
     }
 
     #[inline]
@@ -371,17 +377,18 @@ impl<T: Identifiable> SetMut<T> for Vec<T> {
         Ok(<[T]>::iter_mut(self))
     }
 }
-impl<T> SetMut<T> for HashMap<T::Id, T>
+impl<T> SetMut<T> for HashMap<<T::Id as ToOwned>::Owned, T>
 where
     T: Identifiable,
-    T::Id: Clone,
+    T::Id: ToOwned,
+    <T::Id as ToOwned>::Owned: Eq + Hash,
 {
     #[inline]
     fn insert(&mut self, elem: T) -> Result<Option<T>, Self::Error>
     where
         T: Identifiable,
     {
-        Ok(<Self>::insert(self, elem.id().clone(), elem))
+        Ok(<Self>::insert(self, elem.id().to_owned(), elem))
     }
 
     #[inline]

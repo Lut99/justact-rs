@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 10:54:37
 //  Last edited:
-//    16 Dec 2024, 14:36:47
+//    17 Dec 2024, 15:30:11
 //  Auto updated?
 //    Yes
 //
@@ -25,7 +25,7 @@ use crate::times::Timestamp;
 #[pointer_impls]
 pub trait Authored {
     /// Some identifier for the author.
-    type AuthorId: Eq + Hash;
+    type AuthorId: ?Sized + Eq + Hash;
 
     /// Returns the ID of the author of this object.
     ///
@@ -38,7 +38,7 @@ pub trait Authored {
 #[pointer_impls]
 pub trait Actored {
     /// Some identifier for the actor.
-    type ActorId: Eq + Hash;
+    type ActorId: ?Sized + Eq + Hash;
 
     /// Returns the ID of the actor of this object.
     ///
@@ -51,7 +51,7 @@ pub trait Actored {
 #[pointer_impls]
 pub trait Affectored {
     /// Some identifier for the affector.
-    type AffectorId: Eq + Hash;
+    type AffectorId: ?Sized + Eq + Hash;
 
     /// Returns the ID of the affector of this object.
     ///
@@ -67,7 +67,7 @@ pub trait Affectored {
 #[pointer_impls]
 pub trait Identifiable {
     /// The type of the thing identifying this object.
-    type Id: Eq + Hash;
+    type Id: ?Sized + Eq + Hash;
 
     /// Returns the ID of this object.
     ///
