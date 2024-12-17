@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    17 Dec 2024, 15:50:57
+//    17 Dec 2024, 16:46:47
 //  Auto updated?
 //    Yes
 //
@@ -140,9 +140,9 @@ where
     C: ?Sized,
 {
     /// The policy extracted.
-    type Policy: Policy;
+    type Policy<'m>: Policy;
     /// Any errors thrown if the policy in this object is unparseable.
-    type Error<E>: Error;
+    type Error<'m, E>: Error;
 
 
     /// Extracts the policy from something iterating over messages.
@@ -156,5 +156,5 @@ where
     /// # Errors
     /// This function should error if and only if the policy contained in this object fails to
     /// parse.
-    fn extract<S: Set<M>, M: Message<Id = I, AuthorId = A, Payload = C>>(&mut self, msgs: S) -> Result<Self::Policy, Self::Error<S::Error>>;
+    fn extract<'m, S: Set<M>, M: Message<Id = I, AuthorId = A, Payload = C>>(msgs: &'m S) -> Result<Self::Policy<'m>, Self::Error<'m, S::Error>>;
 }
