@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    16 Dec 2024, 16:15:29
+//    17 Dec 2024, 15:26:27
 //  Auto updated?
 //    Yes
 //
@@ -133,11 +133,11 @@ pub trait Policy: Default {
 /// # Generics
 /// - `P`: Some kind of payload carried in messages that this extractor can retrieve it from.
 #[pointer_impls]
-pub trait Extractor<P> {
+pub trait Extractor<I, A, C> {
     /// The policy extracted.
     type Policy: Policy;
     /// Any errors thrown if the policy in this object is unparseable.
-    type Error: Error;
+    type Error<E>: Error;
 
 
     /// Extracts the policy from something iterating over messages.
@@ -151,5 +151,5 @@ pub trait Extractor<P> {
     /// # Errors
     /// This function should error if and only if the policy contained in this object fails to
     /// parse.
-    fn extract<M: Message<Payload = P>>(&mut self, msgs: impl Set<M>) -> Result<Self::Policy, Self::Error>;
+    fn extract<S: Set<M>, M: Message<Id = I, AuthorId = A, Payload = C>>(&mut self, msgs: S) -> Result<Self::Policy, Self::Error<S::Error>>;
 }
