@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    17 Dec 2024, 15:50:24
+//    19 Dec 2024, 11:41:35
 //  Auto updated?
 //    Yes
 //
@@ -159,4 +159,25 @@ where
     {
         Ok(self.data.values_mut())
     }
+}
+
+// From
+impl<I, M> From<I> for MessageSet<M>
+where
+    I: IntoIterator<Item = M>,
+    M: Identifiable,
+    M::Id: ToOwned,
+    <M::Id as ToOwned>::Owned: Eq + Hash,
+{
+    #[inline]
+    fn from(value: I) -> Self { MessageSet { data: value.into_iter().map(|m| (m.id().to_owned(), m)).collect() } }
+}
+impl<M> FromIterator<M> for MessageSet<M>
+where
+    M: Identifiable,
+    M::Id: ToOwned,
+    <M::Id as ToOwned>::Owned: Eq + Hash,
+{
+    #[inline]
+    fn from_iter<T: IntoIterator<Item = M>>(iter: T) -> Self { Self::from(iter) }
 }
