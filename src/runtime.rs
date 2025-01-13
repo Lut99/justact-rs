@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 17:11:17
 //  Last edited:
-//    13 Jan 2025, 17:11:10
+//    13 Jan 2025, 17:19:38
 //  Auto updated?
 //    Yes
 //
@@ -31,7 +31,7 @@ use crate::times::Times;
 #[pointer_impls]
 pub trait Runtime {
     /// Defines the type of identifiers for agents / synchronizers.
-    type AgentId;
+    type AgentId: ?Sized;
 
     /// Defines the type of messages in the runtime.
     type Message: Message;
