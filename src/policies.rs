@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    13 Jan 2025, 14:40:32
+//    13 Jan 2025, 14:48:39
 //  Auto updated?
 //    Yes
 //
@@ -16,8 +16,8 @@ use std::error::Error;
 
 use auto_traits::pointer_impls;
 
-use crate::auxillary::Affectored;
-use crate::collections::{InfallibleSet, Set};
+use crate::auxillary::{Affectored, Identifiable};
+use crate::collections::{InfallibleMap, InfallibleSet, Set};
 use crate::messages::Message;
 
 
@@ -27,7 +27,7 @@ use crate::messages::Message;
 /// Effects are like truths, but have an additional effector agent that does
 /// them. As such, they are also identified by facts.
 #[pointer_impls]
-pub trait Effect: Affectored {
+pub trait Effect: Affectored + Identifiable {
     type Fact;
 
     /// Returns the fact that encodes the effect.
@@ -42,7 +42,7 @@ pub trait Effect: Affectored {
 /// The Denotation is viewed as a set over _truths_: i.e., when iterating over it, only facts that
 /// are TRUE are yielded, not facts that are known to be false.
 #[pointer_impls]
-pub trait Denotation: InfallibleSet<Self::Effect> + InfallibleSet<Self::Fact> {
+pub trait Denotation: InfallibleMap<Self::Effect> + InfallibleSet<Self::Fact> {
     /// The shape of effects that can be inferred from a policy.
     type Effect: Effect;
     /// The shape of truth that can be inferred from a policy.
