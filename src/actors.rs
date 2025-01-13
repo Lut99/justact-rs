@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:00:07
 //  Last edited:
-//    16 Dec 2024, 15:27:23
+//    13 Jan 2025, 14:27:05
 //  Auto updated?
 //    Yes
 //
@@ -24,10 +24,10 @@ use auto_traits::pointer_impls;
 use crate::actions::Action;
 use crate::agreements::Agreement;
 use crate::auxillary::Identifiable;
+use crate::collections::{Map, MapMut, SetMut};
 use crate::messages::Message;
 use crate::runtime::View;
-use crate::sets::{Set, SetMut};
-use crate::times::{Times, Timestamp};
+use crate::times::Times;
 
 
 /***** LIBRARY *****/
@@ -66,9 +66,9 @@ pub trait Agent: Identifiable {
     fn poll<T, A, S, E, SM, SA>(&mut self, view: View<T, A, S, E>) -> Result<Poll<()>, Self::Error>
     where
         T: Times,
-        A: Set<Agreement<SM, T::Timestamp>>,
-        S: SetMut<SM>,
-        E: SetMut<SA>,
+        A: Map<Agreement<SM, T::Timestamp>>,
+        S: MapMut<SM>,
+        E: MapMut<SA>,
         SM: Message,
         SA: Action;
 }
@@ -109,10 +109,10 @@ pub trait Synchronizer: Identifiable {
     /// - a [`ControlFlow::Break`], indicating the system should stop.
     fn poll<T, A, S, E, SM, SA>(&mut self, view: View<T, A, S, E>) -> Result<ControlFlow<()>, Self::Error>
     where
-        T: SetMut<Timestamp<T::Timestamp>> + Times,
-        A: SetMut<Agreement<SM, T::Timestamp>>,
-        S: SetMut<SM>,
-        E: SetMut<SA>,
+        T: SetMut<T::Timestamp> + Times,
+        A: MapMut<Agreement<SM, T::Timestamp>>,
+        S: MapMut<SM>,
+        E: MapMut<SA>,
         SM: Message,
         SA: Action;
 }

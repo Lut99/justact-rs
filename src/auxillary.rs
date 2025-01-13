@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 10:54:37
 //  Last edited:
-//    17 Dec 2024, 15:30:11
+//    13 Jan 2025, 14:25:33
 //  Auto updated?
 //    Yes
 //
@@ -16,8 +16,6 @@
 use std::hash::Hash;
 
 use auto_traits::pointer_impls;
-
-use crate::times::Timestamp;
 
 
 /***** LIBRARY *****/
@@ -89,5 +87,5 @@ pub trait Timed {
     ///
     /// # Returns
     /// A [`Timestamp<Timed::Timestamp>`](Timestamp) encoding the timestamp at which it was valid.
-    fn at(&self) -> &Timestamp<Self::Timestamp>;
+    fn at(&self) -> &Self::Timestamp;
 }

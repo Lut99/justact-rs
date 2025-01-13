@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 17:11:17
 //  Last edited:
-//    17 Dec 2024, 15:48:46
+//    13 Jan 2025, 14:28:17
 //  Auto updated?
 //    Yes
 //
@@ -23,9 +23,9 @@ use crate::actions::Action;
 use crate::actors::{Agent, Synchronizer};
 use crate::agreements::Agreement;
 use crate::auxillary::{Authored, Identifiable};
+use crate::collections::{InfallibleMap, Map, SetMut};
 use crate::messages::{Message, MessageSet};
-use crate::sets::{InfallibleSet, Set, SetMut};
-use crate::times::{Times, Timestamp};
+use crate::times::Times;
 
 
 /***** ERRORS *****/
@@ -123,9 +123,9 @@ impl<T, A, S, E> View<T, A, S, E> {
     pub fn get_statement<'s, SM, SA>(&'s self, id: &SM::Id) -> Result<Option<&'s SM>, Error<SM::Id, A::Error, S::Error, E::Error>>
     where
         T: Times,
-        A: Set<Agreement<SM, T::Timestamp>>,
-        S: Set<SM>,
-        E: Set<SA>,
+        A: Map<Agreement<SM, T::Timestamp>>,
+        S: Map<SM>,
+        E: Map<SA>,
         SM: Authored + Identifiable,
         SM::Id: Clone,
         SA: 's + Action<Message = SM, Timestamp = T::Timestamp>,
@@ -142,12 +142,12 @@ impl<T, A, S, E> View<T, A, S, E> {
         }
         for act in self.enacted.iter().map_err(|err| Error::StatementGet { id: id.clone(), err: OneOfSetError::Enactments(err) })? {
             // Try the basis first
-            if let Some(msg) = <Agreement<SM, T::Timestamp> as InfallibleSet<SM>>::get(act.basis(), id) {
+            if let Some(msg) = <Agreement<SM, T::Timestamp> as InfallibleMap<SM>>::get(act.basis(), id) {
                 return Ok(Some(msg));
             }
 
             // Then the justification
-            if let Some(msg) = <MessageSet<SM> as InfallibleSet<SM>>::get(act.justification(), id) {
+            if let Some(msg) = <MessageSet<SM> as InfallibleMap<SM>>::get(act.justification(), id) {
                 return Ok(Some(msg));
             }
         }
@@ -168,9 +168,9 @@ impl<T, A, S, E> View<T, A, S, E> {
     pub fn statements<'s, SM, SA>(&'s self) -> Result<impl Iterator<Item = &'s SM>, Error<<SM::Id as ToOwned>::Owned, A::Error, S::Error, E::Error>>
     where
         T: Times,
-        A: Set<Agreement<SM, T::Timestamp>>,
-        S: Set<SM>,
-        E: Set<SA>,
+        A: Map<Agreement<SM, T::Timestamp>>,
+        S: Map<SM>,
+        E: Map<SA>,
         SM: 's + Identifiable,
         SM::Id: ToOwned,
         <SM::Id as ToOwned>::Owned: Eq + Hash,
@@ -179,7 +179,7 @@ impl<T, A, S, E> View<T, A, S, E> {
         let aiter = self.agreed.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Agreements(err) })?.map(|a| &a.message);
         let siter = self.stated.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Statements(err) })?;
         let eiter = self.enacted.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Enactments(err) })?.flat_map(|e| {
-            <Agreement<SM, T::Timestamp> as InfallibleSet<SM>>::iter(e.basis()).chain(<MessageSet<SM> as InfallibleSet<SM>>::iter(e.justification()))
+            <Agreement<SM, T::Timestamp> as InfallibleMap<SM>>::iter(e.basis()).chain(<MessageSet<SM> as InfallibleMap<SM>>::iter(e.justification()))
         });
         Ok(aiter.chain(siter).chain(eiter))
     }
@@ -199,7 +199,7 @@ pub trait Runtime {
     type Action: Action<Message = Self::Message, Timestamp = <Self::Times as Times>::Timestamp>;
 
     /// Defines the set of synchronized times.
-    type Times: SetMut<Timestamp<<Self::Times as Times>::Timestamp>> + Times;
+    type Times: SetMut<<Self::Times as Times>::Timestamp> + Times;
     /// Defines the set of synchronized agreements.
     type Agreements: SetMut<Agreement<Self::Message, <Self::Times as Times>::Timestamp>>;
     /// Defines the set of statements.

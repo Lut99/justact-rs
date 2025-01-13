@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    19 Dec 2024, 12:12:18
+//    13 Jan 2025, 14:40:32
 //  Auto updated?
 //    Yes
 //
@@ -16,9 +16,9 @@ use std::error::Error;
 
 use auto_traits::pointer_impls;
 
-use crate::auxillary::{Affectored, Identifiable};
+use crate::auxillary::Affectored;
+use crate::collections::{InfallibleSet, Set};
 use crate::messages::Message;
-use crate::sets::{InfallibleSet, Set};
 
 
 /***** LIBRARY *****/
@@ -27,44 +27,26 @@ use crate::sets::{InfallibleSet, Set};
 /// Effects are like truths, but have an additional effector agent that does
 /// them. As such, they are also identified by facts.
 #[pointer_impls]
-pub trait Effect: Affectored + Truth {}
+pub trait Effect: Affectored {
+    type Fact;
 
-/// Defines how a single truth in the policy's [`Denotation`] looks like.
-///
-/// Truths are identifiable by facts. This is represented by
-/// [`<Truth as Identifiable>::Id`](Identifiable::Id).
-#[pointer_impls]
-pub trait Truth: Identifiable {
-    /// Returns the fact that is truth'ed by this Truth.
-    ///
-    /// By default, this function is a semantically more meaningful alias for
-    /// [`<Truth as Identifiable>::id()`](Identifiable::id()).
+    /// Returns the fact that encodes the effect.
     ///
     /// # Returns
-    /// The fact that is truth'ed by this Truth.
-    #[inline]
-    fn fact(&self) -> &Self::Id { <Self as Identifiable>::id(self) }
-
-    /// Returns the inner value of this Truth.
-    ///
-    /// Note that this is done under the closed world assumption. I.e., the absence of truth equals
-    /// false.
-    ///
-    /// # Returns
-    /// True if the fact holds, or false otherwise.
-    ///
-    /// In some semantics, logical conflicts collapse to a special error or unknown value. This can
-    /// be communicated by returning [`None`].
-    fn value(&self) -> Option<bool>;
+    /// The fact that is effected.
+    fn fact(&self) -> &Self::Fact;
 }
 
 /// Defines how the interpretation of a snippet of policy looks like.
+///
+/// The Denotation is viewed as a set over _truths_: i.e., when iterating over it, only facts that
+/// are TRUE are yielded, not facts that are known to be false.
 #[pointer_impls]
-pub trait Denotation: InfallibleSet<Self::Effect> + InfallibleSet<Self::Truth> {
+pub trait Denotation: InfallibleSet<Self::Effect> + InfallibleSet<Self::Fact> {
     /// The shape of effects that can be inferred from a policy.
     type Effect: Effect;
     /// The shape of truth that can be inferred from a policy.
-    type Truth: Truth;
+    type Fact;
 
 
     /// Checks whether a given fact is true in this denotation.
@@ -72,20 +54,15 @@ pub trait Denotation: InfallibleSet<Self::Effect> + InfallibleSet<Self::Truth> {
     /// Note that this is done under the closed world assumption. I.e., the absence of truth equals
     /// false.
     ///
-    /// The default implementation simply wraps [`Truth::value()`] if the given fact is in the
-    /// denotation. Else, it assumes `Some(false)`.
-    ///
     /// # Arguments
     /// - `fact`: Some [`Denotation::Fact`] of which we want to learn the truth.
     ///
     /// # Returns
-    /// A [`Self::Truth`]
+    /// [`Some(true)`] if the fact was known to be true, or [`Some(false)`] otherwise.
     ///
-    /// In some semantics, logical conflicts collapse to a special error or unknown value. This can
-    /// be communicated by returning [`None`].
-    fn truth_of(&self, fact: &<Self::Truth as Identifiable>::Id) -> Option<bool> {
-        <Self as InfallibleSet<Self::Truth>>::get(self, fact).and_then(Self::Truth::value).or_else(|| Some(false))
-    }
+    /// Some semantics may define a third value, [`None`], which encodes that the value is
+    /// _unknowable_ (not just unknown). An example of this is a logical contradiction.
+    fn truth_of(&self, fact: &Self::Fact) -> Option<bool>;
 }
 
 

@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 10:07:55
 //  Last edited:
-//    16 Dec 2024, 16:13:07
+//    13 Jan 2025, 14:26:03
 //  Auto updated?
 //    Yes
 //
@@ -16,8 +16,7 @@
 use std::convert::Infallible;
 
 use crate::auxillary::{Authored, Identifiable, Timed};
-use crate::sets::Set;
-use crate::times::Timestamp;
+use crate::collections::Map;
 
 
 /***** LIBRARY *****/
@@ -27,7 +26,7 @@ pub struct Agreement<M, T> {
     /// The message embedded in this agreement.
     pub message: M,
     /// The timestamp at which this agreement is valid.
-    pub at:      Timestamp<T>,
+    pub at:      T,
 }
 
 // JustAct
@@ -43,7 +42,7 @@ impl<M: Identifiable, T> Identifiable for Agreement<M, T> {
     #[inline]
     fn id(&self) -> &Self::Id { self.message.id() }
 }
-impl<M: Identifiable, T> Set<M> for Agreement<M, T> {
+impl<M: Identifiable, T> Map<M> for Agreement<M, T> {
     type Error = Infallible;
 
     #[inline]
@@ -63,5 +62,5 @@ impl<M, T: Eq + Ord> Timed for Agreement<M, T> {
     type Timestamp = T;
 
     #[inline]
-    fn at(&self) -> &Timestamp<Self::Timestamp> { &self.at }
+    fn at(&self) -> &Self::Timestamp { &self.at }
 }

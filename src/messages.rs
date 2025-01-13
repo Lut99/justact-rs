@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    19 Dec 2024, 11:41:35
+//    13 Jan 2025, 14:26:19
 //  Auto updated?
 //    Yes
 //
@@ -20,7 +20,7 @@ use std::hash::Hash;
 use auto_traits::pointer_impls;
 
 use crate::auxillary::{Authored, Identifiable};
-use crate::sets::{Set, SetMut};
+use crate::collections::{Map, MapMut};
 
 
 /***** LIBRARY *****/
@@ -118,7 +118,7 @@ where
 }
 
 // Justact impls
-impl<M> Set<M> for MessageSet<M>
+impl<M> Map<M> for MessageSet<M>
 where
     M: Identifiable,
     M::Id: ToOwned,
@@ -137,7 +137,7 @@ where
         Ok(self.data.values())
     }
 }
-impl<M: Message> SetMut<M> for MessageSet<M>
+impl<M: Message> MapMut<M> for MessageSet<M>
 where
     M: Identifiable,
     M::Id: ToOwned,
