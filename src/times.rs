@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 14:57:21
 //  Last edited:
-//    13 Jan 2025, 14:25:14
+//    13 Jan 2025, 16:24:08
 //  Auto updated?
 //    Yes
 //
@@ -18,7 +18,7 @@ use std::hash::Hash;
 use auto_traits::pointer_impls;
 
 use crate::auxillary::Timed;
-use crate::collections::Set;
+use crate::collections::set::Set;
 
 
 /***** LIBRARY *****/

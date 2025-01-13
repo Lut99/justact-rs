@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 10:07:55
 //  Last edited:
-//    13 Jan 2025, 14:26:03
+//    13 Jan 2025, 16:24:12
 //  Auto updated?
 //    Yes
 //
@@ -16,7 +16,7 @@
 use std::convert::Infallible;
 
 use crate::auxillary::{Authored, Identifiable, Timed};
-use crate::collections::Map;
+use crate::collections::map::Map;
 
 
 /***** LIBRARY *****/

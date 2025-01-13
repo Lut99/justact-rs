@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    13 Jan 2025, 14:26:19
+//    13 Jan 2025, 16:49:12
 //  Auto updated?
 //    Yes
 //
@@ -20,7 +20,7 @@ use std::hash::Hash;
 use auto_traits::pointer_impls;
 
 use crate::auxillary::{Authored, Identifiable};
-use crate::collections::{Map, MapMut};
+use crate::collections::map::{Map, MapSync};
 
 
 /***** LIBRARY *****/
@@ -137,28 +137,14 @@ where
         Ok(self.data.values())
     }
 }
-impl<M: Message> MapMut<M> for MessageSet<M>
+impl<M: Message> MapSync<M> for MessageSet<M>
 where
     M: Identifiable,
     M::Id: ToOwned,
     <M::Id as ToOwned>::Owned: Eq + Hash,
 {
     #[inline]
-    fn insert(&mut self, elem: M) -> Result<Option<M>, Self::Error> { Ok(self.data.insert(elem.id().to_owned(), elem)) }
-
-    #[inline]
-    fn get_mut(&mut self, id: &<M as Identifiable>::Id) -> Result<Option<&mut M>, Self::Error> { Ok(self.data.get_mut(id)) }
-
-    #[inline]
-    fn remove(&mut self, id: &<M as Identifiable>::Id) -> Result<Option<M>, Self::Error> { Ok(self.data.remove(id)) }
-
-    #[inline]
-    fn iter_mut<'s>(&'s mut self) -> Result<impl Iterator<Item = &'s mut M>, Self::Error>
-    where
-        M: 's,
-    {
-        Ok(self.data.values_mut())
-    }
+    fn add(&mut self, elem: M) -> Result<Option<M>, Self::Error> { Ok(self.data.insert(elem.id().to_owned(), elem)) }
 }
 
 // From

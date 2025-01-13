@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    13 Jan 2025, 15:00:09
+//    13 Jan 2025, 16:24:05
 //  Auto updated?
 //    Yes
 //
@@ -17,7 +17,8 @@ use std::error::Error;
 use auto_traits::pointer_impls;
 
 use crate::auxillary::{Affectored, Identifiable};
-use crate::collections::{InfallibleMap, InfallibleSet, Map};
+use crate::collections::map::{InfallibleMap, Map};
+use crate::collections::set::InfallibleSet;
 use crate::messages::Message;
 
 
