@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:23:26
 //  Last edited:
-//    13 Jan 2025, 17:01:39
+//    13 Jan 2025, 17:16:56
 //  Auto updated?
 //    Yes
 //
@@ -127,16 +127,13 @@ where
     /// # Arguments
     /// - `selector`: Some [`Selector`] that can be used to choose who to send the new element to.
     /// - `elem`: The [`Map::Elem`] to add to the set.
-    ///
-    /// # Returns
-    /// If the given element already existed, true is returned. False if it didn't yet.
-    fn add(&mut self, selector: Selector<I>, elem: E) -> Option<E>
+    fn add(&mut self, selector: Selector<I>, elem: E)
     where
         E: Identifiable;
 }
 impl<I, E, T: Map<E, Error = Infallible> + MapAsync<I, E>> InfallibleMapAsync<I, E> for T {
     #[inline]
-    fn add(&mut self, selector: Selector<I>, elem: E) -> Option<E>
+    fn add(&mut self, selector: Selector<I>, elem: E)
     where
         E: Identifiable,
     {
@@ -335,12 +332,9 @@ where
     /// - `selector`: Some [`Selector`] that can be used to choose who to send the new element to.
     /// - `elem`: The [`Map::Elem`] to add to the set.
     ///
-    /// # Returns
-    /// If the given element already existed, true is returned. False if it didn't yet.
-    ///
     /// # Errors
     /// When this function errors is completely implementation-dependent.
-    fn add(&mut self, selector: Selector<I>, elem: E) -> Result<Option<E>, Self::Error>
+    fn add(&mut self, selector: Selector<I>, elem: E) -> Result<(), Self::Error>
     where
         E: Identifiable;
 }
