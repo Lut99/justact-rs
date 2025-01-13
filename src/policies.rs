@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    13 Jan 2025, 14:48:39
+//    13 Jan 2025, 15:00:09
 //  Auto updated?
 //    Yes
 //
@@ -17,7 +17,7 @@ use std::error::Error;
 use auto_traits::pointer_impls;
 
 use crate::auxillary::{Affectored, Identifiable};
-use crate::collections::{InfallibleMap, InfallibleSet, Set};
+use crate::collections::{InfallibleMap, InfallibleSet, Map};
 use crate::messages::Message;
 
 
@@ -125,7 +125,7 @@ where
     /// Extracts the policy from something iterating over messages.
     ///
     /// # Arguments
-    /// - `msgs`: A [`Set`] of messages that we will be extracting from.
+    /// - `msgs`: A [`Map`] of messages that we will be extracting from.
     ///
     /// # Returns
     /// An [`Extractable::Policy`] that describes the policy extracted from `msgs`.
@@ -133,5 +133,5 @@ where
     /// # Errors
     /// This function should error if and only if the policy contained in this object fails to
     /// parse.
-    fn extract<'m, M: 'm + Message<Id = I, AuthorId = A, Payload = C>>(&self, msgs: &'m impl Set<M>) -> Result<Self::Policy<'m>, Self::Error<'m>>;
+    fn extract<'m, M: 'm + Message<Id = I, AuthorId = A, Payload = C>>(&self, msgs: &'m impl Map<M>) -> Result<Self::Policy<'m>, Self::Error<'m>>;
 }
