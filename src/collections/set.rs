@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:22:42
 //  Last edited:
-//    14 Jan 2025, 16:17:38
+//    14 Jan 2025, 16:41:33
 //  Auto updated?
 //    Yes
 //
@@ -142,7 +142,7 @@ impl<I, E, T: Set<E, Error = Infallible> + SetAsync<I, E>> InfallibleSetAsync<I,
 #[pointer_impls]
 pub trait Set<E> {
     /// The errors potentially thrown when interacting with the map.
-    type Error: Error;
+    type Error: 'static + Error;
 
 
     /// Checks if a particular element exists in this set.

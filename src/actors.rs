@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:00:07
 //  Last edited:
-//    14 Jan 2025, 16:14:24
+//    14 Jan 2025, 16:41:16
 //  Auto updated?
 //    Yes
 //
@@ -200,7 +200,7 @@ impl<T, A, S, E> View<T, A, S, E> {
 #[pointer_impls(T = U)]
 pub trait Agent: Identifiable {
     /// Any errors that this agent can throw during its execution.
-    type Error: error::Error;
+    type Error: 'static + error::Error;
 
 
     /// Polls this agent.
@@ -244,7 +244,7 @@ pub trait Agent: Identifiable {
 #[pointer_impls(T = U)]
 pub trait Synchronizer: Identifiable {
     /// Any errors that this synchronizer can throw during its execution.
-    type Error: error::Error;
+    type Error: 'static + error::Error;
 
 
     /// Polls this synchronizer.

@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 17:11:17
 //  Last edited:
-//    14 Jan 2025, 16:26:24
+//    14 Jan 2025, 16:41:01
 //  Auto updated?
 //    Yes
 //
@@ -47,7 +47,7 @@ pub trait Runtime {
     // type Enactments: MapAsync<Self::AgentId, Self::Action>;
 
     /// Any errors thrown by the runtime.
-    type Error: error::Error;
+    type Error: 'static + error::Error;
 
 
     /// Runs this runtime for a given set of agents.
