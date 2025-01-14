@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 14:57:21
 //  Last edited:
-//    14 Jan 2025, 16:11:58
+//    14 Jan 2025, 16:58:22
 //  Auto updated?
 //    Yes
 //
@@ -18,7 +18,7 @@ use std::hash::Hash;
 
 use auto_traits::pointer_impls;
 
-use crate::collections::set::{Set, SetSync};
+use crate::collections::set::{InfallibleSet, Set, SetSync};
 
 
 /***** AUXILLARY *****/
@@ -76,7 +76,7 @@ impl<T: TimesSync<Error = Infallible>> InfallibleTimesSync for T {
 #[pointer_impls]
 pub trait Times: Set<Self::Timestamp> {
     /// The type of the returned subset of current times.
-    type Subset: Set<Self::Timestamp>;
+    type Subset: InfallibleSet<Self::Timestamp>;
     /// The timestamp representation used in this set.
     type Timestamp: Eq + Hash + Ord;
 
