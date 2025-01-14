@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 17:11:17
 //  Last edited:
-//    14 Jan 2025, 16:13:43
+//    14 Jan 2025, 16:26:24
 //  Auto updated?
 //    Yes
 //
@@ -17,12 +17,12 @@ use std::error;
 
 use auto_traits::pointer_impls;
 
-use crate::actions::Action;
+// use crate::actions::Action;
 use crate::actors::{Agent, Synchronizer};
-use crate::agreements::Agreement;
-use crate::collections::map::{MapAsync, MapSync};
-use crate::messages::Message;
-use crate::times::{Times, TimesSync};
+// use crate::agreements::Agreement;
+// use crate::collections::map::{MapAsync, MapSync};
+// use crate::messages::Message;
+// use crate::times::{Times, TimesSync};
 
 
 /***** LIBRARY *****/
@@ -32,19 +32,19 @@ pub trait Runtime {
     /// Defines the type of identifiers for agents / synchronizers.
     type AgentId: ?Sized;
 
-    /// Defines the type of messages in the runtime.
-    type Message: Message;
-    /// Defines the type of actions in the runtime.
-    type Action: Action<Message = Self::Message, Timestamp = <Self::Times as Times>::Timestamp>;
+    // /// Defines the type of messages in the runtime.
+    // type Message: Message;
+    // /// Defines the type of actions in the runtime.
+    // type Action: Action<Message = Self::Message, Timestamp = <Self::Times as Times>::Timestamp>;
 
-    /// Defines the set of synchronized times.
-    type Times: TimesSync;
-    /// Defines the set of synchronized agreements.
-    type Agreements: MapSync<Agreement<Self::Message, <Self::Times as Times>::Timestamp>>;
-    /// Defines the set of statements.
-    type Statements: MapAsync<Self::AgentId, Self::Message>;
-    /// Defines the set of enacted actions.
-    type Enactments: MapAsync<Self::AgentId, Self::Action>;
+    // /// Defines the set of synchronized times.
+    // type Times: TimesSync;
+    // /// Defines the set of synchronized agreements.
+    // type Agreements: MapSync<Agreement<Self::Message, <Self::Times as Times>::Timestamp>>;
+    // /// Defines the set of statements.
+    // type Statements: MapAsync<Self::AgentId, Self::Message>;
+    // /// Defines the set of enacted actions.
+    // type Enactments: MapAsync<Self::AgentId, Self::Action>;
 
     /// Any errors thrown by the runtime.
     type Error: error::Error;
