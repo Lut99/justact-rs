@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 17:11:17
 //  Last edited:
-//    13 Jan 2025, 17:19:38
+//    14 Jan 2025, 16:13:43
 //  Auto updated?
 //    Yes
 //
@@ -21,9 +21,8 @@ use crate::actions::Action;
 use crate::actors::{Agent, Synchronizer};
 use crate::agreements::Agreement;
 use crate::collections::map::{MapAsync, MapSync};
-use crate::collections::set::SetSync;
 use crate::messages::Message;
-use crate::times::Times;
+use crate::times::{Times, TimesSync};
 
 
 /***** LIBRARY *****/
@@ -39,7 +38,7 @@ pub trait Runtime {
     type Action: Action<Message = Self::Message, Timestamp = <Self::Times as Times>::Timestamp>;
 
     /// Defines the set of synchronized times.
-    type Times: SetSync<<Self::Times as Times>::Timestamp> + Times;
+    type Times: TimesSync;
     /// Defines the set of synchronized agreements.
     type Agreements: MapSync<Agreement<Self::Message, <Self::Times as Times>::Timestamp>>;
     /// Defines the set of statements.

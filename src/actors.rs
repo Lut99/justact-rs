@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:00:07
 //  Last edited:
-//    13 Jan 2025, 17:11:05
+//    14 Jan 2025, 16:14:24
 //  Auto updated?
 //    Yes
 //
@@ -27,9 +27,8 @@ use crate::actions::Action;
 use crate::agreements::Agreement;
 use crate::auxillary::{Authored, Identifiable};
 use crate::collections::map::{InfallibleMap, Map, MapAsync, MapSync};
-use crate::collections::set::SetSync;
 use crate::messages::{Message, MessageSet};
-use crate::times::Times;
+use crate::times::{Times, TimesSync};
 
 
 
@@ -272,7 +271,7 @@ pub trait Synchronizer: Identifiable {
     /// - a [`ControlFlow::Break`], indicating the system should stop.
     fn poll<T, A, S, E, SM, SA>(&mut self, view: View<T, A, S, E>) -> Result<ControlFlow<()>, Self::Error>
     where
-        T: SetSync<T::Timestamp> + Times,
+        T: TimesSync,
         A: MapSync<Agreement<SM, T::Timestamp>>,
         S: MapAsync<Self::Id, SM>,
         E: MapAsync<Self::Id, SA>,
