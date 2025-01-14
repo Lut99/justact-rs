@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:00:07
 //  Last edited:
-//    14 Jan 2025, 16:41:16
+//    14 Jan 2025, 17:08:00
 //  Auto updated?
 //    Yes
 //
@@ -197,8 +197,13 @@ impl<T, A, S, E> View<T, A, S, E> {
 ///
 /// Agents are the main actors in the JustAct framework. They use information in all the sets
 /// (synchronized and otherwise) to publish new content in asynchronized sets they have access to.
+///
+/// # Generics
+/// - `MI`: The type of message IDs supported by this agent.
+/// - `AI`: The type of action IDs supported by this agent.
+/// - `TS`: The type of timestamp supported by this agent.
 #[pointer_impls(T = U)]
-pub trait Agent: Identifiable {
+pub trait Agent<MI: ?Sized, AI: ?Sized, TS>: Identifiable {
     /// Any errors that this agent can throw during its execution.
     type Error: 'static + error::Error;
 
@@ -215,6 +220,8 @@ pub trait Agent: Identifiable {
     /// - `A`: The globally synchronized set of agreements.
     /// - `S`: The local view on stated messages.
     /// - `E`: The local view on enacted actions.
+    /// - `SM`: The type of messages carried within the sets above.
+    /// - `SA`: The type of actions carried within the sets above.
     ///
     /// # Arguments
     /// - `view`: A runtime [`View`] that represents this agent's view on the current system.
@@ -227,12 +234,12 @@ pub trait Agent: Identifiable {
     /// - a [`Poll::Pending`], indicating the agent wants to stick around.
     fn poll<T, A, S, E, SM, SA>(&mut self, view: View<T, A, S, E>) -> Result<Poll<()>, Self::Error>
     where
-        T: Times,
-        A: Map<Agreement<SM, T::Timestamp>>,
+        T: Times<Timestamp = TS>,
+        A: Map<Agreement<SM, TS>>,
         S: MapAsync<Self::Id, SM>,
         E: MapAsync<Self::Id, SA>,
-        SM: Message,
-        SA: Action;
+        SM: Message<Id = MI, AuthorId = Self::Id>,
+        SA: Action<Id = AI, ActorId = Self::Id>;
 }
 
 
@@ -241,8 +248,13 @@ pub trait Agent: Identifiable {
 ///
 /// Synchronizers are a special kind of actors that have the power to update synchronized sets.
 /// Like agents, they may use information available in any kind of set to do so.
+///
+/// # Generics
+/// - `MI`: The type of message IDs supported by this Synchronizer.
+/// - `AI`: The type of action IDs supported by this Synchronizer.
+/// - `TS`: The type of timestamp supported by this Synchronizer.
 #[pointer_impls(T = U)]
-pub trait Synchronizer: Identifiable {
+pub trait Synchronizer<MI: ?Sized, AI: ?Sized, TS>: Identifiable {
     /// Any errors that this synchronizer can throw during its execution.
     type Error: 'static + error::Error;
 
@@ -259,6 +271,8 @@ pub trait Synchronizer: Identifiable {
     /// - `A`: The globally synchronized set of agreements.
     /// - `S`: The local view on stated messages.
     /// - `E`: The local view on enacted actions.
+    /// - `SM`: The type of messages carried within the sets above.
+    /// - `SA`: The type of actions carried within the sets above.
     ///
     /// # Arguments
     /// - `view`: A runtime [`View`] that represents this synchronizer's view on the current
@@ -271,10 +285,10 @@ pub trait Synchronizer: Identifiable {
     /// - a [`ControlFlow::Break`], indicating the system should stop.
     fn poll<T, A, S, E, SM, SA>(&mut self, view: View<T, A, S, E>) -> Result<ControlFlow<()>, Self::Error>
     where
-        T: TimesSync,
-        A: MapSync<Agreement<SM, T::Timestamp>>,
+        T: TimesSync<Timestamp = TS>,
+        A: MapSync<Agreement<SM, TS>>,
         S: MapAsync<Self::Id, SM>,
         E: MapAsync<Self::Id, SA>,
-        SM: Message,
-        SA: Action;
+        SM: Message<Id = MI, AuthorId = Self::Id>,
+        SA: Action<Id = AI, ActorId = Self::Id>;
 }

@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 14:57:21
 //  Last edited:
-//    14 Jan 2025, 16:58:22
+//    14 Jan 2025, 17:03:04
 //  Auto updated?
 //    Yes
 //
@@ -14,7 +14,6 @@
 //
 
 use std::convert::Infallible;
-use std::hash::Hash;
 
 use auto_traits::pointer_impls;
 
@@ -78,7 +77,7 @@ pub trait Times: Set<Self::Timestamp> {
     /// The type of the returned subset of current times.
     type Subset: InfallibleSet<Self::Timestamp>;
     /// The timestamp representation used in this set.
-    type Timestamp: Eq + Hash + Ord;
+    type Timestamp;
 
 
     /// Returns all the current times.

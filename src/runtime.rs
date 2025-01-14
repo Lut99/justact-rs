@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 17:11:17
 //  Last edited:
-//    14 Jan 2025, 16:41:01
+//    14 Jan 2025, 17:07:04
 //  Auto updated?
 //    Yes
 //
@@ -17,34 +17,23 @@ use std::error;
 
 use auto_traits::pointer_impls;
 
-// use crate::actions::Action;
 use crate::actors::{Agent, Synchronizer};
-// use crate::agreements::Agreement;
-// use crate::collections::map::{MapAsync, MapSync};
-// use crate::messages::Message;
-// use crate::times::{Times, TimesSync};
 
 
 /***** LIBRARY *****/
 /// Defines the toplevel [`Runtime`], which brings the ontology together.
 #[pointer_impls]
 pub trait Runtime {
-    /// Defines the type of identifiers for agents / synchronizers.
+    /// Defines the type of identifiers for messages.
+    type MessageId: ?Sized;
+    /// Defines the type of identifiers for actions.
+    type ActionId: ?Sized;
+    /// Defines the type of identifiers for agents.
     type AgentId: ?Sized;
-
-    // /// Defines the type of messages in the runtime.
-    // type Message: Message;
-    // /// Defines the type of actions in the runtime.
-    // type Action: Action<Message = Self::Message, Timestamp = <Self::Times as Times>::Timestamp>;
-
-    // /// Defines the set of synchronized times.
-    // type Times: TimesSync;
-    // /// Defines the set of synchronized agreements.
-    // type Agreements: MapSync<Agreement<Self::Message, <Self::Times as Times>::Timestamp>>;
-    // /// Defines the set of statements.
-    // type Statements: MapAsync<Self::AgentId, Self::Message>;
-    // /// Defines the set of enacted actions.
-    // type Enactments: MapAsync<Self::AgentId, Self::Action>;
+    /// Defines the type of identifiers for synchronizers.
+    type SynchronizerId: ?Sized;
+    /// Defines the type of timestamp used for this impl.
+    type Timestamp;
 
     /// Any errors thrown by the runtime.
     type Error: 'static + error::Error;
@@ -59,7 +48,11 @@ pub trait Runtime {
     ///
     /// # Errors
     /// This function errors whenever anything in the set goes wrong.
-    fn run<A>(&mut self, agents: impl IntoIterator<Item = A>, synchronizer: impl Synchronizer<Id = Self::AgentId>) -> Result<(), Self::Error>
+    fn run<A>(
+        &mut self,
+        agents: impl IntoIterator<Item = A>,
+        synchronizer: impl Synchronizer<Self::MessageId, Self::ActionId, Self::Timestamp, Id = Self::SynchronizerId>,
+    ) -> Result<(), Self::Error>
     where
-        A: Agent<Id = Self::AgentId>;
+        A: Agent<Self::MessageId, Self::ActionId, Self::Timestamp, Id = Self::AgentId>;
 }
