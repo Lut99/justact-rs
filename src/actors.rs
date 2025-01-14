@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:00:07
 //  Last edited:
-//    14 Jan 2025, 17:08:00
+//    14 Jan 2025, 17:16:16
 //  Auto updated?
 //    Yes
 //
@@ -201,9 +201,10 @@ impl<T, A, S, E> View<T, A, S, E> {
 /// # Generics
 /// - `MI`: The type of message IDs supported by this agent.
 /// - `AI`: The type of action IDs supported by this agent.
+/// - `MP`: The type of the message payloads supported by this Synchronizer.
 /// - `TS`: The type of timestamp supported by this agent.
 #[pointer_impls(T = U)]
-pub trait Agent<MI: ?Sized, AI: ?Sized, TS>: Identifiable {
+pub trait Agent<MI: ?Sized, AI: ?Sized, MP: ?Sized, TS>: Identifiable {
     /// Any errors that this agent can throw during its execution.
     type Error: 'static + error::Error;
 
@@ -238,8 +239,8 @@ pub trait Agent<MI: ?Sized, AI: ?Sized, TS>: Identifiable {
         A: Map<Agreement<SM, TS>>,
         S: MapAsync<Self::Id, SM>,
         E: MapAsync<Self::Id, SA>,
-        SM: Message<Id = MI, AuthorId = Self::Id>,
-        SA: Action<Id = AI, ActorId = Self::Id>;
+        SM: Message<Id = MI, AuthorId = Self::Id, Payload = MP>,
+        SA: Action<Id = AI, ActorId = Self::Id, Message = SM, Timestamp = TS>;
 }
 
 
@@ -252,9 +253,10 @@ pub trait Agent<MI: ?Sized, AI: ?Sized, TS>: Identifiable {
 /// # Generics
 /// - `MI`: The type of message IDs supported by this Synchronizer.
 /// - `AI`: The type of action IDs supported by this Synchronizer.
+/// - `MP`: The type of the message payloads supported by this Synchronizer.
 /// - `TS`: The type of timestamp supported by this Synchronizer.
 #[pointer_impls(T = U)]
-pub trait Synchronizer<MI: ?Sized, AI: ?Sized, TS>: Identifiable {
+pub trait Synchronizer<MI: ?Sized, AI: ?Sized, MP: ?Sized, TS>: Identifiable {
     /// Any errors that this synchronizer can throw during its execution.
     type Error: 'static + error::Error;
 
@@ -289,6 +291,6 @@ pub trait Synchronizer<MI: ?Sized, AI: ?Sized, TS>: Identifiable {
         A: MapSync<Agreement<SM, TS>>,
         S: MapAsync<Self::Id, SM>,
         E: MapAsync<Self::Id, SA>,
-        SM: Message<Id = MI, AuthorId = Self::Id>,
-        SA: Action<Id = AI, ActorId = Self::Id>;
+        SM: Message<Id = MI, AuthorId = Self::Id, Payload = MP>,
+        SA: Action<Id = AI, ActorId = Self::Id, Message = SM, Timestamp = TS>;
 }

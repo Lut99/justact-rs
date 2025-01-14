@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 17:11:17
 //  Last edited:
-//    14 Jan 2025, 17:07:04
+//    14 Jan 2025, 17:16:40
 //  Auto updated?
 //    Yes
 //
@@ -32,6 +32,8 @@ pub trait Runtime {
     type AgentId: ?Sized;
     /// Defines the type of identifiers for synchronizers.
     type SynchronizerId: ?Sized;
+    /// Defines the type of payloads used in the runtime.
+    type Payload: ?Sized;
     /// Defines the type of timestamp used for this impl.
     type Timestamp;
 
@@ -51,8 +53,8 @@ pub trait Runtime {
     fn run<A>(
         &mut self,
         agents: impl IntoIterator<Item = A>,
-        synchronizer: impl Synchronizer<Self::MessageId, Self::ActionId, Self::Timestamp, Id = Self::SynchronizerId>,
+        synchronizer: impl Synchronizer<Self::MessageId, Self::ActionId, Self::Payload, Self::Timestamp, Id = Self::SynchronizerId>,
     ) -> Result<(), Self::Error>
     where
-        A: Agent<Self::MessageId, Self::ActionId, Self::Timestamp, Id = Self::AgentId>;
+        A: Agent<Self::MessageId, Self::ActionId, Self::Payload, Self::Timestamp, Id = Self::AgentId>;
 }
