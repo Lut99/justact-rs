@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:22:42
 //  Last edited:
-//    13 Jan 2025, 17:16:35
+//    14 Jan 2025, 16:17:38
 //  Auto updated?
 //    Yes
 //
@@ -157,7 +157,7 @@ pub trait Set<E> {
     /// When this function errors is completely implementation-dependent. However, typically, these
     /// are the same conditions as for [`Set::get()`].
     #[inline]
-    fn contains(&self, id: &E) -> Result<bool, Self::Error> { self.get(id).map(|id| id.is_some()) }
+    fn contains(&self, elem: &E) -> Result<bool, Self::Error> { self.get(elem).map(|elem| elem.is_some()) }
 
     /// Retrieves a particular element from this set.
     ///
@@ -172,7 +172,7 @@ pub trait Set<E> {
     ///
     /// # Errors
     /// When this function errors is completely implementation-dependent.
-    fn get(&self, id: &E) -> Result<Option<&E>, Self::Error>;
+    fn get(&self, elem: &E) -> Result<Option<&E>, Self::Error>;
 
     /// Returns an iterator over the elements in this set.
     ///
@@ -187,6 +187,23 @@ pub trait Set<E> {
 }
 
 // Default impls for std types.
+impl<T> Set<T> for Option<T>
+where
+    T: PartialEq,
+{
+    type Error = Infallible;
+
+    #[inline]
+    fn get(&self, elem: &T) -> Result<Option<&T>, Self::Error> { Ok(self.as_ref().filter(|s| *s == elem)) }
+
+    #[inline]
+    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s T>, Self::Error>
+    where
+        T: 's,
+    {
+        Ok(self.as_ref().into_iter())
+    }
+}
 impl<T> Set<T> for Vec<T>
 where
     T: PartialEq,

@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:23:26
 //  Last edited:
-//    13 Jan 2025, 17:16:56
+//    14 Jan 2025, 16:19:00
 //  Auto updated?
 //    Yes
 //
@@ -205,6 +205,24 @@ pub trait Map<E> {
 }
 
 // Default impls for std types.
+impl<T> Map<T> for Option<T>
+where
+    T: Identifiable,
+    T::Id: PartialEq,
+{
+    type Error = Infallible;
+
+    #[inline]
+    fn get(&self, id: &<T as Identifiable>::Id) -> Result<Option<&T>, Self::Error> { Ok(self.as_ref().filter(|s| s.id() == id)) }
+
+    #[inline]
+    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s T>, Self::Error>
+    where
+        T: 's,
+    {
+        Ok(self.as_ref().into_iter())
+    }
+}
 impl<T: Identifiable> Map<T> for Vec<T> {
     type Error = Infallible;
 
