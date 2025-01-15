@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    13 Jan 2025, 16:49:12
+//    15 Jan 2025, 10:50:59
 //  Auto updated?
 //    Yes
 //
@@ -16,8 +16,8 @@ use std::collections::HashMap;
 use std::convert::Infallible;
 use std::fmt::{Debug, Formatter, Result as FResult};
 use std::hash::Hash;
-
-use auto_traits::pointer_impls;
+use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::auxillary::{Authored, Identifiable};
 use crate::collections::map::{Map, MapSync};
@@ -29,17 +29,92 @@ use crate::collections::map::{Map, MapSync};
 /// This is abstract, and not a concrete data structure, because runtimes may wants to decide how
 /// they structure the memory of the Message. In particular, messages might be
 /// [`Arc`](std::sync::Arc)'ed, and they might want to collide the ID and the author.
-#[pointer_impls]
-pub trait Message: Authored + Identifiable {
+pub trait Message: Authored + Identifiable
+where
+    Self::Id: ToOwned,
+    Self::AuthorId: ToOwned,
+{
     /// Defines the type of content carried by this message.
-    type Payload: ?Sized;
+    type Payload: ?Sized + ToOwned;
 
+
+    /// Constructor for a new message with the given ID, author and payload.
+    ///
+    /// # Arguments
+    /// - `id`: The identifier of the new message.
+    /// - `author_id`: The identifier of the message's author.
+    /// - `payload`: The payload to add to the message.
+    ///
+    /// # Returns
+    /// A new Message.
+    fn new(id: <Self::Id as ToOwned>::Owned, author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
+    where
+        Self: Sized;
 
     /// Returns the payload of this message.
     ///
     /// # Returns
     /// An immutable reference to the internal [`Message::Payload`].
     fn payload(&self) -> &Self::Payload;
+}
+
+// Manual pointer impls (for some of them)
+impl<T> Message for Box<T>
+where
+    T: Message,
+    T::Id: ToOwned,
+    T::AuthorId: ToOwned,
+{
+    type Payload = T::Payload;
+
+    #[inline]
+    fn new(id: <Self::Id as ToOwned>::Owned, author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
+    where
+        Self: Sized,
+    {
+        Box::new(<T as Message>::new(id, author_id, payload))
+    }
+
+    #[inline]
+    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
+}
+impl<T> Message for Rc<T>
+where
+    T: Message,
+    T::Id: ToOwned,
+    T::AuthorId: ToOwned,
+{
+    type Payload = T::Payload;
+
+    #[inline]
+    fn new(id: <Self::Id as ToOwned>::Owned, author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
+    where
+        Self: Sized,
+    {
+        Rc::new(<T as Message>::new(id, author_id, payload))
+    }
+
+    #[inline]
+    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
+}
+impl<T> Message for Arc<T>
+where
+    T: Message,
+    T::Id: ToOwned,
+    T::AuthorId: ToOwned,
+{
+    type Payload = T::Payload;
+
+    #[inline]
+    fn new(id: <Self::Id as ToOwned>::Owned, author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
+    where
+        Self: Sized,
+    {
+        Arc::new(<T as Message>::new(id, author_id, payload))
+    }
+
+    #[inline]
+    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
 }
 
 
@@ -142,6 +217,7 @@ where
     M: Identifiable,
     M::Id: ToOwned,
     <M::Id as ToOwned>::Owned: Eq + Hash,
+    M::AuthorId: ToOwned,
 {
     #[inline]
     fn add(&mut self, elem: M) -> Result<Option<M>, Self::Error> { Ok(self.data.insert(elem.id().to_owned(), elem)) }

@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 17:11:17
 //  Last edited:
-//    14 Jan 2025, 17:16:40
+//    15 Jan 2025, 10:55:19
 //  Auto updated?
 //    Yes
 //
@@ -25,15 +25,15 @@ use crate::actors::{Agent, Synchronizer};
 #[pointer_impls]
 pub trait Runtime {
     /// Defines the type of identifiers for messages.
-    type MessageId: ?Sized;
+    type MessageId: ?Sized + ToOwned;
     /// Defines the type of identifiers for actions.
-    type ActionId: ?Sized;
+    type ActionId: ?Sized + ToOwned;
     /// Defines the type of identifiers for agents.
-    type AgentId: ?Sized;
+    type AgentId: ?Sized + ToOwned;
     /// Defines the type of identifiers for synchronizers.
-    type SynchronizerId: ?Sized;
+    type SynchronizerId: ?Sized + ToOwned;
     /// Defines the type of payloads used in the runtime.
-    type Payload: ?Sized;
+    type Payload: ?Sized + ToOwned;
     /// Defines the type of timestamp used for this impl.
     type Timestamp;
 

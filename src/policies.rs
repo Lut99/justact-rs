@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    13 Jan 2025, 16:24:05
+//    14 Jan 2025, 17:22:10
 //  Auto updated?
 //    Yes
 //
@@ -113,8 +113,8 @@ pub trait Policy: Default {
 #[pointer_impls]
 pub trait Extractor<I, A, C>
 where
-    I: ?Sized,
-    A: ?Sized,
+    I: ?Sized + ToOwned,
+    A: ?Sized + ToOwned,
     C: ?Sized,
 {
     /// The policy extracted.

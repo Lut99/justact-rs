@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:00:07
 //  Last edited:
-//    14 Jan 2025, 17:16:16
+//    15 Jan 2025, 10:55:11
 //  Auto updated?
 //    Yes
 //
@@ -133,6 +133,8 @@ impl<T, A, S, E> View<T, A, S, E> {
         SM: Authored + Identifiable,
         SM::Id: Clone,
         SA: 's + Action<Message = SM, Timestamp = T::Timestamp>,
+        SA::Id: ToOwned,
+        SA::ActorId: ToOwned,
     {
         match self.agreed.get(id) {
             Ok(Some(agree)) => return Ok(Some(&agree.message)),
@@ -179,6 +181,8 @@ impl<T, A, S, E> View<T, A, S, E> {
         SM::Id: ToOwned,
         <SM::Id as ToOwned>::Owned: Eq + Hash,
         SA: 's + Action<Message = SM, Timestamp = T::Timestamp>,
+        SA::Id: ToOwned,
+        SA::ActorId: ToOwned,
     {
         let aiter = self.agreed.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Agreements(err) })?.map(|a| &a.message);
         let siter = self.stated.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Statements(err) })?;
@@ -204,7 +208,13 @@ impl<T, A, S, E> View<T, A, S, E> {
 /// - `MP`: The type of the message payloads supported by this Synchronizer.
 /// - `TS`: The type of timestamp supported by this agent.
 #[pointer_impls(T = U)]
-pub trait Agent<MI: ?Sized, AI: ?Sized, MP: ?Sized, TS>: Identifiable {
+pub trait Agent<MI, AI, MP, TS>: Identifiable
+where
+    MI: ?Sized + ToOwned,
+    AI: ?Sized + ToOwned,
+    MP: ?Sized + ToOwned,
+    Self::Id: ToOwned,
+{
     /// Any errors that this agent can throw during its execution.
     type Error: 'static + error::Error;
 
@@ -256,7 +266,13 @@ pub trait Agent<MI: ?Sized, AI: ?Sized, MP: ?Sized, TS>: Identifiable {
 /// - `MP`: The type of the message payloads supported by this Synchronizer.
 /// - `TS`: The type of timestamp supported by this Synchronizer.
 #[pointer_impls(T = U)]
-pub trait Synchronizer<MI: ?Sized, AI: ?Sized, MP: ?Sized, TS>: Identifiable {
+pub trait Synchronizer<MI, AI, MP, TS>: Identifiable
+where
+    MI: ?Sized + ToOwned,
+    AI: ?Sized + ToOwned,
+    MP: ?Sized + ToOwned,
+    Self::Id: ToOwned,
+{
     /// Any errors that this synchronizer can throw during its execution.
     type Error: 'static + error::Error;
 
