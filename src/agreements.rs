@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 10:07:55
 //  Last edited:
-//    13 Jan 2025, 16:24:12
+//    15 Jan 2025, 17:08:42
 //  Auto updated?
 //    Yes
 //
@@ -22,6 +22,7 @@ use crate::collections::map::Map;
 /***** LIBRARY *****/
 /// Newtype for a message that everybody agreed upon.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub struct Agreement<M, T> {
     /// The message embedded in this agreement.
     pub message: M,

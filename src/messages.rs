@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    15 Jan 2025, 10:50:59
+//    15 Jan 2025, 17:08:01
 //  Auto updated?
 //    Yes
 //
@@ -212,15 +212,83 @@ where
         Ok(self.data.values())
     }
 }
-impl<M: Message> MapSync<M> for MessageSet<M>
+impl<M> MapSync<M> for MessageSet<M>
 where
-    M: Identifiable,
+    M: Message,
     M::Id: ToOwned,
     <M::Id as ToOwned>::Owned: Eq + Hash,
     M::AuthorId: ToOwned,
 {
     #[inline]
     fn add(&mut self, elem: M) -> Result<Option<M>, Self::Error> { Ok(self.data.insert(elem.id().to_owned(), elem)) }
+}
+
+// Serde
+#[cfg(feature = "serde")]
+impl<'de, M> serde::Deserialize<'de> for MessageSet<M>
+where
+    M: serde::Deserialize<'de> + Message,
+    M::Id: ToOwned,
+    <M::Id as ToOwned>::Owned: Eq + Hash,
+    M::AuthorId: ToOwned,
+{
+    #[inline]
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        // https://serde.rs/deserialize-map.html
+        struct Visitor<M> {
+            _m: std::marker::PhantomData<M>,
+        }
+        impl<'de, M> serde::de::Visitor<'de> for Visitor<M>
+        where
+            M: serde::Deserialize<'de> + Message,
+            M::Id: ToOwned,
+            <M::Id as ToOwned>::Owned: Eq + Hash,
+            M::AuthorId: ToOwned,
+        {
+            type Value = MessageSet<M>;
+
+            #[inline]
+            fn expecting(&self, f: &mut Formatter) -> FResult { write!(f, "a MessageSet (map of messages)") }
+
+            #[inline]
+            fn visit_seq<A>(self, mut access: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::SeqAccess<'de>,
+            {
+                let mut set = MessageSet::with_capacity(access.size_hint().unwrap_or(0));
+                while let Some(msg) = access.next_element::<M>()? {
+                    set.add(msg).unwrap();
+                }
+                Ok(set)
+            }
+        }
+
+        // Run the deserialize
+        deserializer.deserialize_seq(Visitor { _m: std::marker::PhantomData::<M> })
+    }
+}
+#[cfg(feature = "serde")]
+impl<M> serde::Serialize for MessageSet<M>
+where
+    M: Identifiable + serde::Serialize,
+    M::Id: ToOwned,
+    <M::Id as ToOwned>::Owned: Eq + Hash,
+{
+    #[inline]
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeSeq as _;
+        let mut access = serializer.serialize_seq(Some(self.data.len()))?;
+        for msg in self.data.values() {
+            access.serialize_element(msg)?;
+        }
+        access.end()
+    }
 }
 
 // From
