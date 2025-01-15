@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:22:05
 //  Last edited:
-//    13 Jan 2025, 16:57:35
+//    15 Jan 2025, 17:31:51
 //  Auto updated?
 //    Yes
 //
@@ -19,6 +19,7 @@ pub mod set;
 
 /***** LIBRARY *****/
 /// Defines ways for agents to choose who to send updates to.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Selector<'i, I: ?Sized> {
     /// Send it to a specific agent.
     Agent(&'i I),
