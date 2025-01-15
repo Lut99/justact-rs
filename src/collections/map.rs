@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:23:26
 //  Last edited:
-//    14 Jan 2025, 16:41:30
+//    15 Jan 2025, 17:34:41
 //  Auto updated?
 //    Yes
 //
@@ -127,13 +127,13 @@ where
     /// # Arguments
     /// - `selector`: Some [`Selector`] that can be used to choose who to send the new element to.
     /// - `elem`: The [`Map::Elem`] to add to the set.
-    fn add(&mut self, selector: Selector<I>, elem: E)
+    fn add(&mut self, selector: Selector<&I>, elem: E)
     where
         E: Identifiable;
 }
 impl<I, E, T: Map<E, Error = Infallible> + MapAsync<I, E>> InfallibleMapAsync<I, E> for T {
     #[inline]
-    fn add(&mut self, selector: Selector<I>, elem: E)
+    fn add(&mut self, selector: Selector<&I>, elem: E)
     where
         E: Identifiable,
     {
@@ -352,7 +352,7 @@ where
     ///
     /// # Errors
     /// When this function errors is completely implementation-dependent.
-    fn add(&mut self, selector: Selector<I>, elem: E) -> Result<(), Self::Error>
+    fn add(&mut self, selector: Selector<&I>, elem: E) -> Result<(), Self::Error>
     where
         E: Identifiable;
 }

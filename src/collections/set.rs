@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:22:42
 //  Last edited:
-//    14 Jan 2025, 16:41:33
+//    15 Jan 2025, 17:34:58
 //  Auto updated?
 //    Yes
 //
@@ -119,11 +119,11 @@ where
     ///
     /// # Errors
     /// When this function errors is completely implementation-dependent.
-    fn add(&mut self, selector: Selector<I>, elem: E);
+    fn add(&mut self, selector: Selector<&I>, elem: E);
 }
 impl<I, E, T: Set<E, Error = Infallible> + SetAsync<I, E>> InfallibleSetAsync<I, E> for T {
     #[inline]
-    fn add(&mut self, selector: Selector<I>, elem: E) {
+    fn add(&mut self, selector: Selector<&I>, elem: E) {
         // SAFETY: It is physically impossible for users to express `Err(...)` due to the inability
         // to construct `Infallible`
         unsafe { <T as SetAsync<I, E>>::add(self, selector, elem).unwrap_unchecked() }
@@ -315,5 +315,5 @@ where
     ///
     /// # Errors
     /// When this function errors is completely implementation-dependent.
-    fn add(&mut self, selector: Selector<I>, elem: E) -> Result<(), Self::Error>;
+    fn add(&mut self, selector: Selector<&I>, elem: E) -> Result<(), Self::Error>;
 }
