@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    17 Jan 2025, 15:59:01
+//    17 Jan 2025, 16:41:09
 //  Auto updated?
 //    Yes
 //
@@ -109,7 +109,9 @@ pub trait Policy: Default {
 /// Defines that something can extract policy.
 ///
 /// # Generics
-/// - `P`: Some kind of payload carried in messages that this extractor can retrieve it from.
+/// - `I`: The type of message identifiers that this extractor is compatible with.
+/// - `A`: The type of agent identifiers that this extractor is compatible with.
+/// - `P`: The type of message payloads that this extractor is compatible with.
 #[pointer_impls]
 pub trait Extractor<I, A, C>
 where
