@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    14 Jan 2025, 17:22:10
+//    17 Jan 2025, 15:59:01
 //  Auto updated?
 //    Yes
 //
@@ -134,5 +134,8 @@ where
     /// # Errors
     /// This function should error if and only if the policy contained in this object fails to
     /// parse.
-    fn extract<'m, M: 'm + Message<Id = I, AuthorId = A, Payload = C>>(&self, msgs: &'m impl Map<M>) -> Result<Self::Policy<'m>, Self::Error<'m>>;
+    fn extract<'m, 'm2: 'm, M: 'm2 + Message<Id = I, AuthorId = A, Payload = C>>(
+        &self,
+        msgs: &'m impl Map<M>,
+    ) -> Result<Self::Policy<'m>, Self::Error<'m>>;
 }
