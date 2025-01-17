@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:23:26
 //  Last edited:
-//    15 Jan 2025, 17:34:41
+//    17 Jan 2025, 16:34:55
 //  Auto updated?
 //    Yes
 //
@@ -54,7 +54,7 @@ pub trait InfallibleMap<E>: Map<E, Error = Infallible> {
     ///
     /// # Returns
     /// An [`Iterator`] over [`Map::Elem`] that yields read-only references to every element.
-    fn iter<'s>(&'s self) -> impl Iterator<Item = &'s E>
+    fn iter<'s>(&'s self) -> impl 's + Iterator<Item = &'s E>
     where
         E: 's + Identifiable;
 }
@@ -79,7 +79,7 @@ impl<E, T: Map<E, Error = Infallible>> InfallibleMap<E> for T {
     }
 
     #[inline]
-    fn iter<'s>(&'s self) -> impl Iterator<Item = &'s E>
+    fn iter<'s>(&'s self) -> impl 's + Iterator<Item = &'s E>
     where
         E: 's + Identifiable,
     {
@@ -199,7 +199,7 @@ pub trait Map<E> {
     ///
     /// # Errors
     /// When this function errors is completely implementation-dependent.
-    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s E>, Self::Error>
+    fn iter<'s>(&'s self) -> Result<impl 's + Iterator<Item = &'s E>, Self::Error>
     where
         E: 's + Identifiable;
 }

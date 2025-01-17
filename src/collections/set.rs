@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:22:42
 //  Last edited:
-//    15 Jan 2025, 17:34:58
+//    17 Jan 2025, 16:35:16
 //  Auto updated?
 //    Yes
 //
@@ -51,7 +51,7 @@ pub trait InfallibleSet<E>: Set<E, Error = Infallible> {
     ///
     /// # Returns
     /// An [`Iterator`] over [`Set::Elem`] that yields read-only references to every element.
-    fn iter<'s>(&'s self) -> impl Iterator<Item = &'s E>
+    fn iter<'s>(&'s self) -> impl 's + Iterator<Item = &'s E>
     where
         E: 's;
 }
@@ -71,7 +71,7 @@ impl<E, T: Set<E, Error = Infallible>> InfallibleSet<E> for T {
     }
 
     #[inline]
-    fn iter<'s>(&'s self) -> impl Iterator<Item = &'s E>
+    fn iter<'s>(&'s self) -> impl 's + Iterator<Item = &'s E>
     where
         E: 's,
     {
@@ -181,7 +181,7 @@ pub trait Set<E> {
     ///
     /// # Errors
     /// When this function errors is completely implementation-dependent.
-    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s E>, Self::Error>
+    fn iter<'s>(&'s self) -> Result<impl 's + Iterator<Item = &'s E>, Self::Error>
     where
         E: 's;
 }
@@ -197,7 +197,7 @@ where
     fn get(&self, elem: &T) -> Result<Option<&T>, Self::Error> { Ok(self.as_ref().filter(|s| *s == elem)) }
 
     #[inline]
-    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s T>, Self::Error>
+    fn iter<'s>(&'s self) -> Result<impl 's + Iterator<Item = &'s T>, Self::Error>
     where
         T: 's,
     {
@@ -222,7 +222,7 @@ where
     }
 
     #[inline]
-    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s T>, Self::Error>
+    fn iter<'s>(&'s self) -> Result<impl 's + Iterator<Item = &'s T>, Self::Error>
     where
         T: 's,
     {
@@ -240,7 +240,7 @@ where
     fn get(&self, elem: &T) -> Result<Option<&T>, Self::Error> { Ok(HashSet::get(self, elem)) }
 
     #[inline]
-    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s T>, Self::Error>
+    fn iter<'s>(&'s self) -> Result<impl 's + Iterator<Item = &'s T>, Self::Error>
     where
         T: 's,
     {
