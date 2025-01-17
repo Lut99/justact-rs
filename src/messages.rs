@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    15 Jan 2025, 17:08:01
+//    17 Jan 2025, 15:25:17
 //  Auto updated?
 //    Yes
 //
@@ -19,6 +19,8 @@ use std::hash::Hash;
 use std::rc::Rc;
 use std::sync::Arc;
 
+use auto_traits::pointer_impls;
+
 use crate::auxillary::{Authored, Identifiable};
 use crate::collections::map::{Map, MapSync};
 
@@ -29,15 +31,29 @@ use crate::collections::map::{Map, MapSync};
 /// This is abstract, and not a concrete data structure, because runtimes may wants to decide how
 /// they structure the memory of the Message. In particular, messages might be
 /// [`Arc`](std::sync::Arc)'ed, and they might want to collide the ID and the author.
-pub trait Message: Authored + Identifiable
+#[pointer_impls]
+pub trait Message: Authored + Identifiable {
+    /// Defines the type of content carried by this message.
+    type Payload: ?Sized;
+
+    /// Returns the payload of this message.
+    ///
+    /// # Returns
+    /// An immutable reference to the internal [`Message::Payload`].
+    fn payload(&self) -> &Self::Payload;
+}
+
+
+
+/// Defines a constructor for a message.
+///
+/// This is a more powerful version of a message that can also be constructed, but needn't be one itself.
+pub trait ConstructableMessage: Message
 where
     Self::Id: ToOwned,
     Self::AuthorId: ToOwned,
+    Self::Payload: ToOwned,
 {
-    /// Defines the type of content carried by this message.
-    type Payload: ?Sized + ToOwned;
-
-
     /// Constructor for a new message with the given ID, author and payload.
     ///
     /// # Arguments
@@ -50,71 +66,53 @@ where
     fn new(id: <Self::Id as ToOwned>::Owned, author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
     where
         Self: Sized;
-
-    /// Returns the payload of this message.
-    ///
-    /// # Returns
-    /// An immutable reference to the internal [`Message::Payload`].
-    fn payload(&self) -> &Self::Payload;
 }
 
 // Manual pointer impls (for some of them)
-impl<T> Message for Box<T>
+impl<T> ConstructableMessage for Box<T>
 where
-    T: Message,
+    T: ConstructableMessage,
     T::Id: ToOwned,
     T::AuthorId: ToOwned,
+    T::Payload: ToOwned,
 {
-    type Payload = T::Payload;
-
     #[inline]
     fn new(id: <Self::Id as ToOwned>::Owned, author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
     where
         Self: Sized,
     {
-        Box::new(<T as Message>::new(id, author_id, payload))
+        Box::new(<T as ConstructableMessage>::new(id, author_id, payload))
     }
-
-    #[inline]
-    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
 }
-impl<T> Message for Rc<T>
+impl<T> ConstructableMessage for Rc<T>
 where
-    T: Message,
+    T: ConstructableMessage,
     T::Id: ToOwned,
     T::AuthorId: ToOwned,
+    T::Payload: ToOwned,
 {
-    type Payload = T::Payload;
-
     #[inline]
     fn new(id: <Self::Id as ToOwned>::Owned, author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
     where
         Self: Sized,
     {
-        Rc::new(<T as Message>::new(id, author_id, payload))
+        Rc::new(<T as ConstructableMessage>::new(id, author_id, payload))
     }
-
-    #[inline]
-    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
 }
-impl<T> Message for Arc<T>
+impl<T> ConstructableMessage for Arc<T>
 where
-    T: Message,
+    T: ConstructableMessage,
     T::Id: ToOwned,
     T::AuthorId: ToOwned,
+    T::Payload: ToOwned,
 {
-    type Payload = T::Payload;
-
     #[inline]
     fn new(id: <Self::Id as ToOwned>::Owned, author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
     where
         Self: Sized,
     {
-        Arc::new(<T as Message>::new(id, author_id, payload))
+        Arc::new(<T as ConstructableMessage>::new(id, author_id, payload))
     }
-
-    #[inline]
-    fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
 }
 
 

@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:00:07
 //  Last edited:
-//    15 Jan 2025, 10:55:11
+//    17 Jan 2025, 15:28:58
 //  Auto updated?
 //    Yes
 //
@@ -23,11 +23,11 @@ use std::task::Poll;
 
 use auto_traits::pointer_impls;
 
-use crate::actions::Action;
+use crate::actions::{Action, ConstructableAction};
 use crate::agreements::Agreement;
 use crate::auxillary::{Authored, Identifiable};
 use crate::collections::map::{InfallibleMap, Map, MapAsync, MapSync};
-use crate::messages::{Message, MessageSet};
+use crate::messages::{ConstructableMessage, MessageSet};
 use crate::times::{Times, TimesSync};
 
 
@@ -249,8 +249,8 @@ where
         A: Map<Agreement<SM, TS>>,
         S: MapAsync<Self::Id, SM>,
         E: MapAsync<Self::Id, SA>,
-        SM: Message<Id = MI, AuthorId = Self::Id, Payload = MP>,
-        SA: Action<Id = AI, ActorId = Self::Id, Message = SM, Timestamp = TS>;
+        SM: ConstructableMessage<Id = MI, AuthorId = Self::Id, Payload = MP>,
+        SA: ConstructableAction<Id = AI, ActorId = Self::Id, Message = SM, Timestamp = TS>;
 }
 
 
@@ -307,6 +307,6 @@ where
         A: MapSync<Agreement<SM, TS>>,
         S: MapAsync<Self::Id, SM>,
         E: MapAsync<Self::Id, SA>,
-        SM: Message<Id = MI, AuthorId = Self::Id, Payload = MP>,
-        SA: Action<Id = AI, ActorId = Self::Id, Message = SM, Timestamp = TS>;
+        SM: ConstructableMessage<Id = MI, AuthorId = Self::Id, Payload = MP>,
+        SA: ConstructableAction<Id = AI, ActorId = Self::Id, Message = SM, Timestamp = TS>;
 }
