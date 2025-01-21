@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:23:26
 //  Last edited:
-//    17 Jan 2025, 16:34:55
+//    21 Jan 2025, 14:58:09
 //  Auto updated?
 //    Yes
 //
@@ -57,6 +57,12 @@ pub trait InfallibleMap<E>: Map<E, Error = Infallible> {
     fn iter<'s>(&'s self) -> impl 's + Iterator<Item = &'s E>
     where
         E: 's + Identifiable;
+
+    /// Returns how many elements there are in this map.
+    ///
+    /// # Returns
+    /// A [`usize`] encoding this.
+    fn len(&self) -> usize;
 }
 impl<E, T: Map<E, Error = Infallible>> InfallibleMap<E> for T {
     #[inline]
@@ -86,6 +92,13 @@ impl<E, T: Map<E, Error = Infallible>> InfallibleMap<E> for T {
         // SAFETY: It is physically impossible for users to express `Err(...)` due to the inability
         // to construct `Infallible`
         unsafe { <T as Map<E>>::iter(self).unwrap_unchecked() }
+    }
+
+    #[inline]
+    fn len(&self) -> usize {
+        // SAFETY: It is physically impossible for users to express `Err(...)` due to the inability
+        // to construct `Infallible`
+        unsafe { <T as Map<E>>::len(self).unwrap_unchecked() }
     }
 }
 
@@ -202,6 +215,15 @@ pub trait Map<E> {
     fn iter<'s>(&'s self) -> Result<impl 's + Iterator<Item = &'s E>, Self::Error>
     where
         E: 's + Identifiable;
+
+    /// Returns how many elements there are in this map.
+    ///
+    /// # Returns
+    /// A [`usize`] encoding this.
+    ///
+    /// # Errors
+    /// When this function errors is completely implementation-dependent.
+    fn len(&self) -> Result<usize, Self::Error>;
 }
 
 // Default impls for std types.
@@ -222,6 +244,9 @@ where
     {
         Ok(self.as_ref().into_iter())
     }
+
+    #[inline]
+    fn len(&self) -> Result<usize, Self::Error> { Ok(if self.is_some() { 1 } else { 0 }) }
 }
 impl<T: Identifiable> Map<T> for Vec<T> {
     type Error = Infallible;
@@ -247,6 +272,9 @@ impl<T: Identifiable> Map<T> for Vec<T> {
     {
         Ok(<[T]>::iter(self))
     }
+
+    #[inline]
+    fn len(&self) -> Result<usize, Self::Error> { Ok(<Self>::len(self)) }
 }
 impl<T: Identifiable> Map<T> for HashMap<<T::Id as ToOwned>::Owned, T>
 where
@@ -272,6 +300,9 @@ where
     {
         Ok(<Self>::values(self))
     }
+
+    #[inline]
+    fn len(&self) -> Result<usize, Self::Error> { Ok(<Self>::len(self)) }
 }
 
 

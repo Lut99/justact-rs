@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 10:07:55
 //  Last edited:
-//    15 Jan 2025, 17:08:42
+//    21 Jan 2025, 14:59:04
 //  Auto updated?
 //    Yes
 //
@@ -58,6 +58,9 @@ impl<M: Identifiable, T> Map<M> for Agreement<M, T> {
     {
         Ok(Some(&self.message).into_iter())
     }
+
+    #[inline]
+    fn len(&self) -> Result<usize, Self::Error> { Ok(1) }
 }
 impl<M, T: Eq + Ord> Timed for Agreement<M, T> {
     type Timestamp = T;

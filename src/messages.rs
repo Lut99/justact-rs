@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    21 Jan 2025, 14:47:53
+//    21 Jan 2025, 14:58:43
 //  Auto updated?
 //    Yes
 //
@@ -209,6 +209,9 @@ where
     {
         Ok(self.data.values())
     }
+
+    #[inline]
+    fn len(&self) -> Result<usize, Self::Error> { Ok(self.data.len()) }
 }
 impl<M> MapSync<M> for MessageSet<M>
 where

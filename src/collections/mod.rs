@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:22:05
 //  Last edited:
-//    17 Jan 2025, 15:54:18
+//    21 Jan 2025, 14:58:25
 //  Auto updated?
 //    Yes
 //
@@ -112,6 +112,9 @@ where
     {
         Ok(Some(&self.0).into_iter())
     }
+
+    #[inline]
+    fn len(&self) -> Result<usize, Self::Error> { Ok(1) }
 }
 impl<T> Map<T> for Singleton<T> {
     type Error = Infallible;
@@ -139,6 +142,9 @@ impl<T> Map<T> for Singleton<T> {
     {
         Ok(Some(&self.0).into_iter())
     }
+
+    #[inline]
+    fn len(&self) -> Result<usize, Self::Error> { Ok(1) }
 }
 
 // From

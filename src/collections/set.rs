@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:22:42
 //  Last edited:
-//    17 Jan 2025, 16:35:16
+//    21 Jan 2025, 14:56:14
 //  Auto updated?
 //    Yes
 //
@@ -54,6 +54,12 @@ pub trait InfallibleSet<E>: Set<E, Error = Infallible> {
     fn iter<'s>(&'s self) -> impl 's + Iterator<Item = &'s E>
     where
         E: 's;
+
+    /// Returns how many elements there are in this set.
+    ///
+    /// # Returns
+    /// A [`usize`] encoding this.
+    fn len(&self) -> usize;
 }
 impl<E, T: Set<E, Error = Infallible>> InfallibleSet<E> for T {
     #[inline]
@@ -78,6 +84,13 @@ impl<E, T: Set<E, Error = Infallible>> InfallibleSet<E> for T {
         // SAFETY: It is physically impossible for users to express `Err(...)` due to the inability
         // to construct `Infallible`
         unsafe { <T as Set<E>>::iter(self).unwrap_unchecked() }
+    }
+
+    #[inline]
+    fn len(&self) -> usize {
+        // SAFETY: It is physically impossible for users to express `Err(...)` due to the inability
+        // to construct `Infallible`
+        unsafe { <T as Set<E>>::len(self).unwrap_unchecked() }
     }
 }
 
@@ -184,6 +197,15 @@ pub trait Set<E> {
     fn iter<'s>(&'s self) -> Result<impl 's + Iterator<Item = &'s E>, Self::Error>
     where
         E: 's;
+
+    /// Returns how many elements there are in this set.
+    ///
+    /// # Returns
+    /// A [`usize`] encoding this.
+    ///
+    /// # Errors
+    /// When this function errors is completely implementation-dependent.
+    fn len(&self) -> Result<usize, Self::Error>;
 }
 
 // Default impls for std types.
@@ -203,6 +225,9 @@ where
     {
         Ok(self.as_ref().into_iter())
     }
+
+    #[inline]
+    fn len(&self) -> Result<usize, Self::Error> { Ok(if self.is_some() { 1 } else { 0 }) }
 }
 impl<T> Set<T> for Vec<T>
 where
@@ -228,6 +253,9 @@ where
     {
         Ok(<[T]>::iter(self))
     }
+
+    #[inline]
+    fn len(&self) -> Result<usize, Self::Error> { Ok(<Self>::len(self)) }
 }
 impl<T> Set<T> for HashSet<T>
 where
@@ -246,6 +274,9 @@ where
     {
         Ok(<Self>::iter(self))
     }
+
+    #[inline]
+    fn len(&self) -> Result<usize, Self::Error> { Ok(<Self>::len(self)) }
 }
 
 
