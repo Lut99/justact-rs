@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:43:49
 //  Last edited:
-//    17 Jan 2025, 15:25:17
+//    21 Jan 2025, 14:47:53
 //  Auto updated?
 //    Yes
 //
@@ -48,7 +48,7 @@ pub trait Message: Authored + Identifiable {
 /// Defines a constructor for a message.
 ///
 /// This is a more powerful version of a message that can also be constructed, but needn't be one itself.
-pub trait ConstructableMessage: Message
+pub trait ConstructableMessage: Clone + Message
 where
     Self::Id: ToOwned,
     Self::AuthorId: ToOwned,

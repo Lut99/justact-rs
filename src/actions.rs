@@ -4,7 +4,7 @@
 //  Created:
 //    11 Dec 2024, 10:06:41
 //  Last edited:
-//    17 Jan 2025, 15:28:30
+//    21 Jan 2025, 14:48:00
 //  Auto updated?
 //    Yes
 //
@@ -55,7 +55,7 @@ pub trait Action: Actored + Identifiable + Timed {
 /// Defines a constructor for an action.
 ///
 /// This is a more powerful version of an action that can also be constructed, but needn't be one itself.
-pub trait ConstructableAction: Action
+pub trait ConstructableAction: Clone + Action
 where
     Self::Id: ToOwned,
     Self::ActorId: ToOwned,
