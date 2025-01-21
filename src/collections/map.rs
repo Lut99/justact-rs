@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:23:26
 //  Last edited:
-//    21 Jan 2025, 14:58:09
+//    21 Jan 2025, 15:03:33
 //  Auto updated?
 //    Yes
 //
@@ -63,6 +63,14 @@ pub trait InfallibleMap<E>: Map<E, Error = Infallible> {
     /// # Returns
     /// A [`usize`] encoding this.
     fn len(&self) -> usize;
+
+    /// Returns if there are any elements in the set.
+    ///
+    /// Note that, due to convention, the question is phrased in the negative.
+    ///
+    /// # Returns
+    /// True if there are **no** elements in the set, false if there are.
+    fn is_empty(&self) -> bool;
 }
 impl<E, T: Map<E, Error = Infallible>> InfallibleMap<E> for T {
     #[inline]
@@ -99,6 +107,13 @@ impl<E, T: Map<E, Error = Infallible>> InfallibleMap<E> for T {
         // SAFETY: It is physically impossible for users to express `Err(...)` due to the inability
         // to construct `Infallible`
         unsafe { <T as Map<E>>::len(self).unwrap_unchecked() }
+    }
+
+    #[inline]
+    fn is_empty(&self) -> bool {
+        // SAFETY: It is physically impossible for users to express `Err(...)` due to the inability
+        // to construct `Infallible`
+        unsafe { <T as Map<E>>::is_empty(self).unwrap_unchecked() }
     }
 }
 
@@ -224,6 +239,18 @@ pub trait Map<E> {
     /// # Errors
     /// When this function errors is completely implementation-dependent.
     fn len(&self) -> Result<usize, Self::Error>;
+
+    /// Returns if there are any elements in the set.
+    ///
+    /// Note that, due to convention, the question is phrased in the negative.
+    ///
+    /// # Returns
+    /// True if there are **no** elements in the set, false if there are.
+    ///
+    /// # Errors
+    /// When this function errors is completely implementation-dependent.
+    #[inline]
+    fn is_empty(&self) -> Result<bool, Self::Error> { Ok(self.len()? == 0) }
 }
 
 // Default impls for std types.

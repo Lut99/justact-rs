@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:22:42
 //  Last edited:
-//    21 Jan 2025, 14:56:14
+//    21 Jan 2025, 15:03:01
 //  Auto updated?
 //    Yes
 //
@@ -60,6 +60,14 @@ pub trait InfallibleSet<E>: Set<E, Error = Infallible> {
     /// # Returns
     /// A [`usize`] encoding this.
     fn len(&self) -> usize;
+
+    /// Returns if there are any elements in the set.
+    ///
+    /// Note that, due to convention, the question is phrased in the negative.
+    ///
+    /// # Returns
+    /// True if there are **no** elements in the set, false if there are.
+    fn is_empty(&self) -> bool;
 }
 impl<E, T: Set<E, Error = Infallible>> InfallibleSet<E> for T {
     #[inline]
@@ -91,6 +99,13 @@ impl<E, T: Set<E, Error = Infallible>> InfallibleSet<E> for T {
         // SAFETY: It is physically impossible for users to express `Err(...)` due to the inability
         // to construct `Infallible`
         unsafe { <T as Set<E>>::len(self).unwrap_unchecked() }
+    }
+
+    #[inline]
+    fn is_empty(&self) -> bool {
+        // SAFETY: It is physically impossible for users to express `Err(...)` due to the inability
+        // to construct `Infallible`
+        unsafe { <T as Set<E>>::is_empty(self).unwrap_unchecked() }
     }
 }
 
@@ -206,6 +221,18 @@ pub trait Set<E> {
     /// # Errors
     /// When this function errors is completely implementation-dependent.
     fn len(&self) -> Result<usize, Self::Error>;
+
+    /// Returns if there are any elements in the set.
+    ///
+    /// Note that, due to convention, the question is phrased in the negative.
+    ///
+    /// # Returns
+    /// True if there are **no** elements in the set, false if there are.
+    ///
+    /// # Errors
+    /// When this function errors is completely implementation-dependent.
+    #[inline]
+    fn is_empty(&self) -> Result<bool, Self::Error> { Ok(self.len()? == 0) }
 }
 
 // Default impls for std types.
