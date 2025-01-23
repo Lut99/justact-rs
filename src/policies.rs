@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 12:00:42
 //  Last edited:
-//    17 Jan 2025, 16:41:09
+//    23 Jan 2025, 16:55:22
 //  Auto updated?
 //    Yes
 //
@@ -64,6 +64,25 @@ pub trait Denotation: InfallibleMap<Self::Effect> + InfallibleSet<Self::Fact> {
     /// Some semantics may define a third value, [`None`], which encodes that the value is
     /// _unknowable_ (not just unknown). An example of this is a logical contradiction.
     fn truth_of(&self, fact: &Self::Fact) -> Option<bool>;
+
+
+    /// Returns an iterator over the truths in this [`Denotation`].
+    ///
+    /// By default, this is an alias for the [`InfallibleSet::<Self::Fact>::iter()`](InfallibleSet::iter()) implementation.
+    ///
+    /// # Returns
+    /// An [`Iterator`] over [`Denotatation::Fact`]s.
+    #[inline]
+    fn iter_truths<'s>(&'s self) -> impl 's + Iterator<Item = &'s Self::Fact> { <Self as InfallibleSet<Self::Fact>>::iter(self) }
+
+    /// Returns an iterator over the effects in this [`Denotation`].
+    ///
+    /// By default, this is an alias for the [`InfallibleMap::<Self::Effect>::iter()`](InfallibleMap::iter()) implementation.
+    ///
+    /// # Returns
+    /// An [`Iterator`] over [`Denotatation::Effect`]s.
+    #[inline]
+    fn iter_effects<'s>(&'s self) -> impl 's + Iterator<Item = &'s Self::Effect> { <Self as InfallibleMap<Self::Effect>>::iter(self) }
 }
 
 
