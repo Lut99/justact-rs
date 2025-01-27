@@ -8,4 +8,17 @@ description = "Implements the core framework part of the JustAct framework. For 
 
 
 [dependencies]
-nohash-hasher = "0.2.0"
+chrono = { version = "0.4.39", optional = true }
+# nohash-hasher = "0.2.0"
+# parking_lot = { version = "0.12.3", optional = true }
+serde = { version = "1.0.217", features = ["derive"], optional = true }
+
+auto-traits = { git = "https://github.com/Lut99/auto-traits-rs" }
+
+
+[features]
+default = []
+
+chrono = ["dep:chrono"]
+# parking_lot = ["dep:parking_lot"]
+serde = ["dep:serde"]

@@ -2,62 +2,115 @@
 //    by Lut99
 //
 //  Created:
-//    21 May 2024, 16:34:11
+//    11 Dec 2024, 14:57:21
 //  Last edited:
-//    23 May 2024, 11:54:50
+//    14 Jan 2025, 17:03:04
 //  Auto updated?
 //    Yes
 //
 //  Description:
-//!   Implements the globally synchronized set of timestamps, including
-//!   which one is the current one.
+//!   Defines timesteps, which are the things that indicate what time it
+//!   is.
 //
 
-use std::error::Error;
-use std::fmt::{Display, Formatter, Result as FResult};
+use std::convert::Infallible;
+
+use auto_traits::pointer_impls;
+
+use crate::collections::set::{InfallibleSet, Set, SetSync};
 
 
-/***** LIBRARY *****/
-/// Defines what it means for something to be a timestamp.
-///
-/// This implementation is provided, as we expect it to be the same across implementations.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct Timestamp(pub u128);
-impl Display for Timestamp {
+/***** AUXILLARY *****/
+/// Convenience wrapper around [`Times`] for when they are [infallible](std::convert::Infallible).
+pub trait InfallibleTimes: Times<Error = Infallible> {
+    /// Returns all the current times.
+    ///
+    /// This is used by auditors or other agents at the moment they first receive an enactment to
+    /// see if it was done using a current agreement. I.e., if the action/agreement was at a time
+    /// which is in the returned set, it is considered current.
+    ///
+    /// # Returns
+    /// Some set of [`Self::Timestamp`](Times::Timestamp)s that indicate which are current.
+    fn current(&self) -> Self::Subset;
+}
+impl<T: Times<Error = Infallible>> InfallibleTimes for T {
     #[inline]
-    fn fmt(&self, f: &mut Formatter) -> FResult { write!(f, "{}", self.0) }
+    fn current(&self) -> Self::Subset {
+        // SAFETY: It is physically impossible for users to express `Err(...)` due to the inability
+        // to construct `Infallible`
+        unsafe { <T as Times>::current(self).unwrap_unchecked() }
+    }
+}
+
+/// Convenience wrapper around [`TimesSync`]s for when they are
+/// [infallible](std::convert::Infallible).
+pub trait InfallibleTimesSync: TimesSync<Error = Infallible> {
+    /// Adds a given timestamp to the current ones.
+    ///
+    /// This function should always imply also calling [`SetSync::add()`] for the given element.
+    /// Remember, after all, that the set of current times needs to be a _subset_ of all times.
+    ///
+    /// # Arguments
+    /// - `timestamp`: A new [`Times::Timestamp`] to mark as current.
+    ///
+    /// # Returns
+    /// True if the element was already marked as current, or false otherwise.
+    fn add_current(&mut self, timestamp: Self::Timestamp) -> bool;
+}
+impl<T: TimesSync<Error = Infallible>> InfallibleTimesSync for T {
+    #[inline]
+    fn add_current(&mut self, timestamp: Self::Timestamp) -> bool {
+        // SAFETY: It is physically impossible for users to express `Err(...)` due to the inability
+        // to construct `Infallible`
+        unsafe { <T as TimesSync>::add_current(self, timestamp).unwrap_unchecked() }
+    }
 }
 
 
 
-/// Implements an abstract set of timestamps, including information about the current one.
-///
-/// This is a _globally synchronized_ set, meaning that the framework requires agents to be in
-/// agreement at all times about this set's contents.
-pub trait Times {
-    /// The (set of) error(s) that may occur when running [`Self::advance_to()`](Times::advance_to()).
-    type Error: Error;
 
 
-    /// Returns the timestamp which is the current one.
+/***** LIBRARY *****/
+/// Extends a [`Set`] of timestamps with functionality to see which ones are current.
+#[pointer_impls]
+pub trait Times: Set<Self::Timestamp> {
+    /// The type of the returned subset of current times.
+    type Subset: InfallibleSet<Self::Timestamp>;
+    /// The timestamp representation used in this set.
+    type Timestamp;
+
+
+    /// Returns all the current times.
     ///
-    /// Any information about past or future can be deduced from which is the current timestamp, plus [`Timestamp`]'s [`Ord`]-implementation.
+    /// This is used by auditors or other agents at the moment they first receive an enactment to
+    /// see if it was done using a current agreement. I.e., if the action/agreement was at a time
+    /// which is in the returned set, it is considered current.
     ///
     /// # Returns
-    /// The current [`Timestamp`].
-    fn current(&self) -> Timestamp;
-
-    /// Pushes a new timestamp to be the current one.
-    ///
-    /// # Arguments
-    /// - `timestamp`: The new [`Timestamp`] to advance to.
+    /// Some set of [`Self::Timestamp`](Times::Timestamp)s that indicate which are current.
     ///
     /// # Errors
-    /// Whether this succeeds or not is entirely based on the underlying implementation. In
-    /// particular, this function might fail if agents failed to reach consensus, not all agents
-    /// could be synchronized, etc.
+    /// This function may error at any time the implementation likes.
+    fn current(&self) -> Result<Self::Subset, Self::Error>;
+}
+
+
+
+/// Extends a [`SetSync`] of timestamps with functionality to define which ones are current.
+#[pointer_impls]
+pub trait TimesSync: SetSync<Self::Timestamp> + Times {
+    /// Adds a given timestamp to the current ones.
     ///
-    /// However, one should assume that _if_ this function fails, the current time has not
-    /// advanced.
-    fn advance_to(&mut self, timestamp: Timestamp) -> Result<(), Self::Error>;
+    /// This function should always imply also calling [`SetSync::add()`] for the given element.
+    /// Remember, after all, that the set of current times needs to be a _subset_ of all times.
+    ///
+    /// # Arguments
+    /// - `timestamp`: A new [`Times::Timestamp`] to mark as current.
+    ///
+    /// # Returns
+    /// True if the element was already marked as current, or false otherwise.
+    ///
+    /// # Errors
+    /// This function may error at any time the implementation likes.
+    fn add_current(&mut self, timestamp: Self::Timestamp) -> Result<bool, Self::Error>;
 }

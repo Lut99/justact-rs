@@ -2,80 +2,90 @@
 //    by Lut99
 //
 //  Created:
-//    13 May 2024, 14:16:11
+//    10 Dec 2024, 10:54:37
 //  Last edited:
-//    23 May 2024, 16:58:44
+//    13 Jan 2025, 14:25:33
 //  Auto updated?
 //    Yes
 //
 //  Description:
-//!   Defines some smaller, not-occuring-in-the-paper traits that are very
-//!   convenient.
+//!   Defines a few small traits for implementing various arrows in the
+//!   ontology.
 //
 
-use std::borrow::Cow;
 use std::hash::Hash;
+
+use auto_traits::pointer_impls;
 
 
 /***** LIBRARY *****/
-/// Something is **uniquely** identifiable by something else.
-///
-/// Note, however, that the namespace of uniqueness is only for things of the same type (e.g.,
-/// across messages or across agents).
-pub trait Identifiable {
-    /// The thing used as identifier. For convenience, we require it to [`Eq`] and [`Hash`].
-    type Id: ?Sized + Eq + Hash;
+/// Abstractly defines an object which has an author.
+#[pointer_impls]
+pub trait Authored {
+    /// Some identifier for the author.
+    type AuthorId: ?Sized + Eq + Hash;
 
-    /// Returns the identifier for this thing.
-    ///
-    /// Note, however, that the namespace of uniqueness is only for things of the same type (e.g., across messages or across agents).
+    /// Returns the ID of the author of this object.
     ///
     /// # Returns
-    /// Something of type `Self::Id` that uniquely identifiers this object.
+    /// A reference to an [`Authored::AuthorId`] that describes the unique ID of this object's author.
+    fn author_id(&self) -> &Self::AuthorId;
+}
+
+/// Abstractly defines an object which has an actor.
+#[pointer_impls]
+pub trait Actored {
+    /// Some identifier for the actor.
+    type ActorId: ?Sized + Eq + Hash;
+
+    /// Returns the ID of the actor of this object.
+    ///
+    /// # Returns
+    /// A reference to an [`Actored::ActorId`] that describes the unique ID of this object's actor.
+    fn actor_id(&self) -> &Self::ActorId;
+}
+
+/// Abstractly defines an object which has an affector.
+#[pointer_impls]
+pub trait Affectored {
+    /// Some identifier for the affector.
+    type AffectorId: ?Sized + Eq + Hash;
+
+    /// Returns the ID of the affector of this object.
+    ///
+    /// # Returns
+    /// A reference to an [`Affectored::AffectorId`] that describes the unique ID of this object's
+    /// affector.
+    fn affector_id(&self) -> &Self::AffectorId;
+}
+
+
+
+/// Abstractly defines an object which is uniquely identifiable by something.
+#[pointer_impls]
+pub trait Identifiable {
+    /// The type of the thing identifying this object.
+    type Id: ?Sized + Eq + Hash;
+
+    /// Returns the ID of this object.
+    ///
+    /// # Returns
+    /// A reference to an [`Identifiable::Id`] that describes the unique ID of this object.
     fn id(&self) -> &Self::Id;
 }
 
-// Implement over some pointer-like types
-impl<'a, T: Identifiable> Identifiable for &'a T {
-    type Id = T::Id;
-
-    #[inline]
-    fn id(&self) -> &Self::Id { T::id(self) }
-}
-impl<'a, T: Clone + Identifiable> Identifiable for Cow<'a, T> {
-    type Id = T::Id;
-
-    #[inline]
-    fn id(&self) -> &Self::Id { T::id(self) }
-}
 
 
+/// Abstractly defines an object which is valid at a certain time.
+#[pointer_impls]
+pub trait Timed {
+    /// The representation of the timestamp.
+    type Timestamp: Eq + Ord;
 
-/// Something is authored by some agent.
-///
-/// # Generics
-/// - `'v`: The lifetime of the [`SystemView`](crate::SystemView) where the message's data lives.
-pub trait Authored {
-    /// The thing used as identifier of the agent. For convenience, we require it to [`Eq`] and [`Hash`].
-    type AuthorId: ?Sized + Eq + Hash;
 
-    /// Returns the unique identifier of the author of this object.
+    /// Returns the timestamp at which this object was valid.
     ///
     /// # Returns
-    /// A `Self::Author::Id` that represents the author of this object.
-    fn author(&self) -> &Self::AuthorId;
-}
-
-// Implement over some pointer-like types
-impl<'a, T: Authored> Authored for &'a T {
-    type AuthorId = T::AuthorId;
-
-    #[inline]
-    fn author(&self) -> &Self::AuthorId { T::author(self) }
-}
-impl<'a, T: Clone + Authored> Authored for Cow<'a, T> {
-    type AuthorId = T::AuthorId;
-
-    #[inline]
-    fn author(&self) -> &Self::AuthorId { T::author(self) }
+    /// A [`Timestamp<Timed::Timestamp>`](Timestamp) encoding the timestamp at which it was valid.
+    fn at(&self) -> &Self::Timestamp;
 }
