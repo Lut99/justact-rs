@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:00:07
 //  Last edited:
-//    17 Jan 2025, 15:28:58
+//    28 Jan 2025, 15:41:56
 //  Auto updated?
 //    Yes
 //
@@ -18,7 +18,6 @@
 use std::error;
 use std::fmt::{Debug, Display, Formatter, Result as FResult};
 use std::hash::Hash;
-use std::ops::ControlFlow;
 use std::task::Poll;
 
 use auto_traits::pointer_impls;
@@ -298,10 +297,11 @@ where
     ///   the simulation.
     ///
     /// # Returns
-    /// A [`ControlFlow`] which, can either:
-    /// - be [`ControlFlow::Continue`], indicating the runtime should continue; or
-    /// - a [`ControlFlow::Break`], indicating the system should stop.
-    fn poll<T, A, S, E, SM, SA>(&mut self, view: View<T, A, S, E>) -> Result<ControlFlow<()>, Self::Error>
+    /// A [`Poll`] which, can either:
+    /// - be [`Poll::Ready`], indicating the synchronizer has no more work to do (and can be
+    ///   deleted); or
+    /// - a [`Poll::Pending`], indicating the synchronizer wants to stick around.
+    fn poll<T, A, S, E, SM, SA>(&mut self, view: View<T, A, S, E>) -> Result<Poll<()>, Self::Error>
     where
         T: TimesSync<Timestamp = TS>,
         A: MapSync<Agreement<SM, TS>>,
