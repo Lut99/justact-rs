@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:23:26
 //  Last edited:
-//    21 Jan 2025, 15:03:33
+//    29 Jan 2025, 15:45:04
 //  Auto updated?
 //    Yes
 //
@@ -20,7 +20,7 @@ use std::hash::Hash;
 
 use auto_traits::pointer_impls;
 
-pub use super::Selector;
+pub use super::Recipient;
 use crate::auxillary::Identifiable;
 
 
@@ -153,15 +153,15 @@ where
     /// Inserts a new element into the map.
     ///
     /// # Arguments
-    /// - `selector`: Some [`Selector`] that can be used to choose who to send the new element to.
+    /// - `selector`: Some [`Recipient`] that can be used to choose who to send the new element to.
     /// - `elem`: The [`Map::Elem`] to add to the set.
-    fn add(&mut self, selector: Selector<&I>, elem: E)
+    fn add(&mut self, selector: Recipient<&I>, elem: E)
     where
         E: Identifiable;
 }
 impl<I, E, T: Map<E, Error = Infallible> + MapAsync<I, E>> InfallibleMapAsync<I, E> for T {
     #[inline]
-    fn add(&mut self, selector: Selector<&I>, elem: E)
+    fn add(&mut self, selector: Recipient<&I>, elem: E)
     where
         E: Identifiable,
     {
@@ -405,12 +405,12 @@ where
     /// Inserts a new element into the map.
     ///
     /// # Arguments
-    /// - `selector`: Some [`Selector`] that can be used to choose who to send the new element to.
+    /// - `selector`: Some [`Recipient`] that can be used to choose who to send the new element to.
     /// - `elem`: The [`Map::Elem`] to add to the set.
     ///
     /// # Errors
     /// When this function errors is completely implementation-dependent.
-    fn add(&mut self, selector: Selector<&I>, elem: E) -> Result<(), Self::Error>
+    fn add(&mut self, selector: Recipient<&I>, elem: E) -> Result<(), Self::Error>
     where
         E: Identifiable;
 }

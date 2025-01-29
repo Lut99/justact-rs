@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:22:05
 //  Last edited:
-//    21 Jan 2025, 14:58:25
+//    29 Jan 2025, 15:44:46
 //  Auto updated?
 //    Yes
 //
@@ -28,28 +28,31 @@ use crate::auxillary::Identifiable;
 
 /***** LIBRARY *****/
 /// Defines ways for agents to choose who to send updates to.
+///
+/// # Generics
+/// - `I`: The type of identifier for the agent in the case of [`Recipient::One`]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-pub enum Selector<I> {
-    /// Send it to a specific agent.
-    Agent(I),
+pub enum Recipient<I> {
     /// Send it to all agents.
     All,
+    /// Send it to a specific agent.
+    One(I),
 }
-impl<I> Selector<I> {
+impl<I> Recipient<I> {
     /// Maps the identifier of the agent, if any.
     ///
     /// # Arguments
     /// - `callback`: Some [`FnOnce`] that will translate `I` to something else. Note it is only
-    ///   called if this is a [`Selector::Agent`].
+    ///   called if this is a [`Recipient::One`].
     ///
     /// # Returns
-    /// A new Selector with the mapped identifier of an agent.
+    /// A new Recipient with the mapped identifier of an agent.
     #[inline]
-    pub fn map<T>(self, callback: impl FnOnce(I) -> T) -> Selector<T> {
+    pub fn map<T>(self, callback: impl FnOnce(I) -> T) -> Recipient<T> {
         match self {
-            Self::Agent(id) => Selector::Agent(callback(id)),
-            Self::All => Selector::All,
+            Self::All => Recipient::All,
+            Self::One(id) => Recipient::One(callback(id)),
         }
     }
 }
