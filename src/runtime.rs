@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 17:11:17
 //  Last edited:
-//    15 Jan 2025, 10:55:19
+//    29 Jan 2025, 22:03:37
 //  Auto updated?
 //    Yes
 //
@@ -38,7 +38,7 @@ pub trait Runtime {
     type Timestamp;
 
     /// Any errors thrown by the runtime.
-    type Error: 'static + error::Error;
+    type Error: 'static + Send + error::Error;
 
 
     /// Runs this runtime for a given set of agents.

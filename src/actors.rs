@@ -4,7 +4,7 @@
 //  Created:
 //    10 Dec 2024, 11:00:07
 //  Last edited:
-//    28 Jan 2025, 15:41:56
+//    29 Jan 2025, 22:03:45
 //  Auto updated?
 //    Yes
 //
@@ -215,7 +215,7 @@ where
     Self::Id: ToOwned,
 {
     /// Any errors that this agent can throw during its execution.
-    type Error: 'static + error::Error;
+    type Error: 'static + Send + error::Error;
 
 
     /// Polls this agent.
@@ -273,7 +273,7 @@ where
     Self::Id: ToOwned,
 {
     /// Any errors that this synchronizer can throw during its execution.
-    type Error: 'static + error::Error;
+    type Error: 'static + Send + error::Error;
 
 
     /// Polls this synchronizer.

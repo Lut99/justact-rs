@@ -4,7 +4,7 @@
 //  Created:
 //    13 Jan 2025, 16:23:26
 //  Last edited:
-//    29 Jan 2025, 15:45:04
+//    29 Jan 2025, 22:03:14
 //  Auto updated?
 //    Yes
 //
@@ -183,7 +183,7 @@ impl<I, E, T: Map<E, Error = Infallible> + MapAsync<I, E>> InfallibleMapAsync<I,
 #[pointer_impls]
 pub trait Map<E> {
     /// The errors potentially thrown when interacting with the map.
-    type Error: 'static + Error;
+    type Error: 'static + Send + Error;
 
 
     /// Checks if a particular element exists in this map.
