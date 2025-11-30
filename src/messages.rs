@@ -292,16 +292,17 @@ where
     }
 }
 
-// From
-impl<I, M> From<I> for MessageSet<M>
+// Iterators
+impl<M> IntoIterator for MessageSet<M>
 where
-    I: IntoIterator<Item = M>,
     M: Identifiable,
     M::Id: ToOwned,
-    <M::Id as ToOwned>::Owned: Eq + Hash,
 {
+    type IntoIter = std::collections::hash_map::IntoValues<<M::Id as ToOwned>::Owned, M>;
+    type Item = M;
+
     #[inline]
-    fn from(value: I) -> Self { MessageSet { data: value.into_iter().map(|m| (m.id().to_owned(), m)).collect() } }
+    fn into_iter(self) -> Self::IntoIter { self.data.into_values() }
 }
 impl<M> FromIterator<M> for MessageSet<M>
 where
@@ -310,5 +311,5 @@ where
     <M::Id as ToOwned>::Owned: Eq + Hash,
 {
     #[inline]
-    fn from_iter<T: IntoIterator<Item = M>>(iter: T) -> Self { Self::from(iter) }
+    fn from_iter<T: IntoIterator<Item = M>>(iter: T) -> Self { MessageSet { data: iter.into_iter().map(|m| (m.id().to_owned(), m)).collect() } }
 }

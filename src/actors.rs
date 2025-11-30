@@ -146,13 +146,8 @@ impl<T, A, S, E> View<T, A, S, E> {
             Err(err) => return Err(Error::StatementGet { id: id.clone(), err: OneOfSetError::Statements(err) }),
         }
         for act in self.enacted.iter().map_err(|err| Error::StatementGet { id: id.clone(), err: OneOfSetError::Enactments(err) })? {
-            // Try the basis first
-            if let Some(msg) = <Agreement<SM, T::Timestamp> as InfallibleMap<SM>>::get(act.basis(), id) {
-                return Ok(Some(msg));
-            }
-
             // Then the justification
-            if let Some(msg) = <MessageSet<SM> as InfallibleMap<SM>>::get(act.justification(), id) {
+            if let Some(msg) = <MessageSet<&SM> as InfallibleMap<&SM>>::get(&act.payload(), id) {
                 return Ok(Some(msg));
             }
         }
@@ -185,9 +180,8 @@ impl<T, A, S, E> View<T, A, S, E> {
     {
         let aiter = self.agreed.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Agreements(err) })?.map(|a| &a.message);
         let siter = self.stated.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Statements(err) })?;
-        let eiter = self.enacted.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Enactments(err) })?.flat_map(|e| {
-            <Agreement<SM, T::Timestamp> as InfallibleMap<SM>>::iter(e.basis()).chain(<MessageSet<SM> as InfallibleMap<SM>>::iter(e.justification()))
-        });
+        let eiter =
+            self.enacted.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Enactments(err) })?.flat_map(|e| e.payload().into_iter());
         Ok(aiter.chain(siter).chain(eiter))
     }
 }
