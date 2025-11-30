@@ -39,13 +39,27 @@ pub trait Action: Actored + Identifiable + Timed {
     /// An [`Agreement`] to base the action on.
     fn basis(&self) -> &Agreement<Self::Message, Self::Timestamp>;
 
-    /// The justification that should satisfy the agreement.
+    /// Any additional messages that the actor wants to include in the payload of this action.
     ///
-    /// Note that this should include the statement embedded by the agreement as well.
+    /// "Additional" means beyond the basis & `actor X`-message.
     ///
     /// # Returns
-    /// A [`MessageSet`] encoding the statements in the justification.
-    fn justification(&self) -> &MessageSet<Self::Message>
+    /// A [`MessageSet`] encoding the extra statements included by the actor.
+    fn extra(&self) -> &MessageSet<Self::Message>
+    where
+        <Self::Message as Identifiable>::Id: ToOwned;
+
+    /// Returns the full payload of this action.
+    ///
+    /// This is essentially defined as:
+    /// ```plain
+    /// basis() U extra() U { `actor X.` }
+    /// ```
+    /// (where `X` is the actor of this action.)
+    ///
+    /// # Returns
+    /// A [`MessageSet`] encoding the extra statements included by the actor.
+    fn payload(&self) -> MessageSet<Self::Message>
     where
         <Self::Message as Identifiable>::Id: ToOwned;
 }
