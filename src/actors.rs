@@ -146,9 +146,19 @@ impl<T, A, S, E> View<T, A, S, E> {
             Err(err) => return Err(Error::StatementGet { id: id.clone(), err: OneOfSetError::Statements(err) }),
         }
         for act in self.enacted.iter().map_err(|err| Error::StatementGet { id: id.clone(), err: OneOfSetError::Enactments(err) })? {
-            // Then the justification
-            if let Some(msg) = <MessageSet<&SM> as InfallibleMap<&SM>>::get(&act.payload(), id) {
-                return Ok(Some(msg));
+            // First search the basis.
+            // NOTE: We don't search the payload due to lifetime issues, and it's basis + extras
+            // anyway. Further, we assume that we can't predict the ID of the actor anyway.
+            let agr = act.basis();
+            if agr.message.id() == id {
+                return Ok(Some(&agr.message));
+            }
+
+            // Then search the extras
+            for extra in <MessageSet<_> as InfallibleMap<_>>::iter(act.extra()) {
+                if extra.id() == id {
+                    return Ok(Some(extra));
+                }
             }
         }
         Ok(None)
@@ -165,21 +175,21 @@ impl<T, A, S, E> View<T, A, S, E> {
     ///
     /// # Errors
     /// This function can error if any of the nested sets errors when their iterator is being constructed.
-    pub fn statements<'s, SM, SA>(&'s self) -> Result<impl Iterator<Item = &'s SM>, Error<<SM::Id as ToOwned>::Owned, A::Error, S::Error, E::Error>>
+    pub fn statements<'s, SM, SA>(&'s self) -> Result<impl 's + Iterator<Item = SM>, Error<<SM::Id as ToOwned>::Owned, A::Error, S::Error, E::Error>>
     where
         T: Times,
         A: Map<Agreement<SM, T::Timestamp>>,
         S: Map<SM>,
         E: Map<SA>,
-        SM: 's + Identifiable,
+        SM: 's + Clone + Identifiable,
         SM::Id: ToOwned,
         <SM::Id as ToOwned>::Owned: Eq + Hash,
         SA: 's + Action<Message = SM, Timestamp = T::Timestamp>,
         SA::Id: ToOwned,
         SA::ActorId: ToOwned,
     {
-        let aiter = self.agreed.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Agreements(err) })?.map(|a| &a.message);
-        let siter = self.stated.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Statements(err) })?;
+        let aiter = self.agreed.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Agreements(err) })?.map(|a| a.message.clone());
+        let siter = self.stated.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Statements(err) })?.cloned();
         let eiter =
             self.enacted.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Enactments(err) })?.flat_map(|e| e.payload().into_iter());
         Ok(aiter.chain(siter).chain(eiter))
