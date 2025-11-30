@@ -59,7 +59,7 @@ pub trait Action: Actored + Identifiable + Timed {
     ///
     /// # Returns
     /// A [`MessageSet`] encoding the extra statements included by the actor.
-    fn payload(&self) -> MessageSet<Self::Message>
+    fn payload(&self) -> MessageSet<&Self::Message>
     where
         <Self::Message as Identifiable>::Id: ToOwned;
 }
