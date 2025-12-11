@@ -14,9 +14,10 @@
 //
 
 use std::convert::Infallible;
+use std::hash::Hash;
 
-use crate::auxillary::{Authored, Identifiable, Timed};
-use crate::collections::map::Map;
+use crate::auxillary::{Authored, Timed};
+use crate::collections::set::Set;
 
 
 /***** LIBRARY *****/
@@ -37,22 +38,14 @@ impl<M: Authored, T> Authored for Agreement<M, T> {
     #[inline]
     fn author_id(&self) -> &Self::AuthorId { self.message.author_id() }
 }
-impl<M: Identifiable, T> Identifiable for Agreement<M, T> {
-    type Id = <M as Identifiable>::Id;
-
-    #[inline]
-    fn id(&self) -> &Self::Id { self.message.id() }
-}
-impl<M: Identifiable, T> Map<M> for Agreement<M, T> {
+impl<M: Eq + Hash, T> Set<M> for Agreement<M, T> {
     type Error = Infallible;
 
     #[inline]
-    fn get(&self, id: &<M as Identifiable>::Id) -> Result<Option<&M>, Self::Error> {
-        if self.message.id() == id { Ok(Some(&self.message)) } else { Ok(None) }
-    }
+    fn get(&self, elem: &M) -> Result<Option<&M>, Self::Error> { if elem == &self.message { Ok(Some(&self.message)) } else { Ok(None) } }
 
     #[inline]
-    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s M>, Self::Error>
+    fn iter<'s>(&'s self) -> Result<impl 's + Iterator<Item = &'s M>, Self::Error>
     where
         M: 's,
     {
