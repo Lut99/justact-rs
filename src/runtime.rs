@@ -21,26 +21,26 @@ use crate::actors::{Agent, Synchronizer};
 
 
 /***** LIBRARY *****/
-/// Defines the toplevel [`Runtime`], which brings the ontology together.
+/// Defines the toplevel [`System`], which brings the ontology together.
 #[pointer_impls]
-pub trait Runtime {
+pub trait System {
     /// Defines the type of identifiers for agents.
     type AgentId: ?Sized + ToOwned;
     /// Defines the type of identifiers for synchronizers.
     type SynchronizerId: ?Sized + ToOwned;
-    /// Defines the type of payloads used in the runtime.
+    /// Defines the type of payloads used in the system.
     type Payload: ?Sized + ToOwned;
 
-    /// Any errors thrown by the runtime.
+    /// Any errors thrown by the system.
     type Error: 'static + Send + error::Error;
 
 
-    /// Runs this runtime for a given set of agents.
+    /// Runs this system for a given set of agents.
     ///
     /// # Arguments
     /// - `agents`: Something yielding the total set of [`Agent`]s to run.
     /// - `synchronizer`: The [`Synchronizer`] that can influence synchronized sets and/or when
-    ///   the runtime stops.
+    ///   the system stops.
     ///
     /// # Errors
     /// This function errors whenever anything in the set goes wrong.
