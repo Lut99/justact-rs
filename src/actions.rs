@@ -18,7 +18,7 @@ use std::sync::Arc;
 use auto_traits::pointer_impls;
 
 use crate::agreements::Agreement;
-use crate::auxillary::{Actored, Timed};
+use crate::auxillary::Actored;
 use crate::messages::MessageSet;
 
 
@@ -28,7 +28,7 @@ use crate::messages::MessageSet;
 /// Like [`Message`]s, actions are abstract because runtimes may wants to decide how they structure
 /// the memory of the Action. In particular, they might want to collide the ID and the author.
 #[pointer_impls]
-pub trait Action: Actored + Timed {
+pub trait Action: Actored {
     /// The type of messages this action uses.
     type Message;
 
@@ -37,7 +37,7 @@ pub trait Action: Actored + Timed {
     ///
     /// # Returns
     /// An [`Agreement`] to base the action on.
-    fn basis(&self) -> &Agreement<Self::Message, Self::Timestamp>;
+    fn basis(&self) -> &Agreement<Self::Message>;
 
     /// Any additional messages that the actor wants to include in the payload of this action.
     ///
@@ -81,7 +81,7 @@ where
     ///
     /// # Returns
     /// A new Action.
-    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message, Self::Timestamp>, extra: MessageSet<Self::Message>) -> Self
+    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message>, extra: MessageSet<Self::Message>) -> Self
     where
         Self: Sized;
 }
@@ -93,7 +93,7 @@ where
     T::ActorId: ToOwned,
 {
     #[inline]
-    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message, Self::Timestamp>, extra: MessageSet<Self::Message>) -> Self
+    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message>, extra: MessageSet<Self::Message>) -> Self
     where
         Self: Sized,
     {
@@ -106,7 +106,7 @@ where
     T::ActorId: ToOwned,
 {
     #[inline]
-    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message, Self::Timestamp>, extra: MessageSet<Self::Message>) -> Self
+    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message>, extra: MessageSet<Self::Message>) -> Self
     where
         Self: Sized,
     {
@@ -119,7 +119,7 @@ where
     T::ActorId: ToOwned,
 {
     #[inline]
-    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message, Self::Timestamp>, extra: MessageSet<Self::Message>) -> Self
+    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message>, extra: MessageSet<Self::Message>) -> Self
     where
         Self: Sized,
     {

@@ -27,7 +27,6 @@ use crate::agreements::Agreement;
 use crate::auxillary::Identifiable;
 use crate::collections::set::{InfallibleSet, Set, SetAsync, SetSync};
 use crate::messages::{ConstructableMessage, MessageSet};
-use crate::times::{Times, TimesSync};
 
 
 
@@ -93,9 +92,7 @@ impl<EA: 'static + error::Error, ES: 'static + error::Error, EE: 'static + error
 /***** AUXILLARY *****/
 /// Defines the view that agents or synchronizers have on the runtime.
 #[derive(Clone, Copy, Debug)]
-pub struct View<T, A, S, E> {
-    /// The set of times that can possibly exist, including one current one.
-    pub times:   T,
+pub struct View<A, S, E> {
     /// The set of agreements that have been formulated.
     pub agreed:  A,
     /// The set of messages that have been stated (and visible to this agent!).
@@ -103,7 +100,7 @@ pub struct View<T, A, S, E> {
     /// The set of actions that have been enacted (and visible to this agent!).
     pub enacted: E,
 }
-impl<T, A, S, E> View<T, A, S, E> {
+impl<A, S, E> View<A, S, E> {
     /// Returns an iterator over all the statements in this view.
     ///
     /// This is not just the statements in [`View::stated`], but also those embedded in
@@ -117,19 +114,20 @@ impl<T, A, S, E> View<T, A, S, E> {
     /// This function can error if any of the nested sets errors when their iterator is being constructed.
     pub fn statements<'s, SM, SA>(&'s self) -> Result<impl Iterator<Item = &'s SM>, Error<A::Error, S::Error, E::Error>>
     where
-        T: Times,
-        A: Set<Agreement<SM, T::Timestamp>>,
+        A: Set<Agreement<SM>>,
         S: Set<SM>,
         E: Set<SA>,
         SM: 's + Eq + Hash,
-        SA: 's + Action<Message = SM, Timestamp = T::Timestamp>,
+        SA: 's + Action<Message = SM>,
         SA::ActorId: ToOwned,
     {
         let aiter = self.agreed.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Agreements(err) })?.map(|a| &a.message);
         let siter = self.stated.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Statements(err) })?;
-        let eiter = self.enacted.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Enactments(err) })?.flat_map(|e| {
-            <Agreement<SM, T::Timestamp> as InfallibleSet<SM>>::iter(e.basis()).chain(<MessageSet<SM> as InfallibleSet<SM>>::iter(e.extra()))
-        });
+        let eiter = self
+            .enacted
+            .iter()
+            .map_err(|err| Error::StatementsIter { err: OneOfSetError::Enactments(err) })?
+            .flat_map(|e| <Agreement<SM> as InfallibleSet<SM>>::iter(e.basis()).chain(<MessageSet<SM> as InfallibleSet<SM>>::iter(e.extra())));
         Ok(aiter.chain(siter).chain(eiter))
     }
 }
@@ -145,9 +143,8 @@ impl<T, A, S, E> View<T, A, S, E> {
 ///
 /// # Generics
 /// - `MP`: The type of the message payloads supported by this Synchronizer.
-/// - `TS`: The type of timestamp supported by this agent.
 #[pointer_impls(T = U)]
-pub trait Agent<MP, TS>: Identifiable
+pub trait Agent<MP>: Identifiable
 where
     MP: ?Sized + ToOwned,
     Self::Id: ToOwned,
@@ -180,14 +177,13 @@ where
     /// A [`Poll`] which, can either:
     /// - be [`Poll::Ready`], indicating the agent has no more work to do (and can be deleted); or
     /// - a [`Poll::Pending`], indicating the agent wants to stick around.
-    fn poll<T, A, S, E, SM, SA>(&mut self, view: View<T, A, S, E>) -> Result<Poll<()>, Self::Error>
+    fn poll<A, S, E, SM, SA>(&mut self, view: View<A, S, E>) -> Result<Poll<()>, Self::Error>
     where
-        T: Times<Timestamp = TS>,
-        A: Set<Agreement<SM, TS>>,
+        A: Set<Agreement<SM>>,
         S: SetAsync<Self::Id, SM>,
         E: SetAsync<Self::Id, SA>,
         SM: ConstructableMessage<AuthorId = Self::Id, Payload = MP>,
-        SA: ConstructableAction<ActorId = Self::Id, Message = SM, Timestamp = TS>;
+        SA: ConstructableAction<ActorId = Self::Id, Message = SM>;
 }
 
 
@@ -199,9 +195,8 @@ where
 ///
 /// # Generics
 /// - `MP`: The type of the message payloads supported by this Synchronizer.
-/// - `TS`: The type of timestamp supported by this Synchronizer.
 #[pointer_impls(T = U)]
-pub trait Synchronizer<MP, TS>: Identifiable
+pub trait Synchronizer<MP>: Identifiable
 where
     MP: ?Sized + ToOwned,
     Self::Id: ToOwned,
@@ -235,12 +230,11 @@ where
     /// - be [`Poll::Ready`], indicating the synchronizer has no more work to do (and can be
     ///   deleted); or
     /// - a [`Poll::Pending`], indicating the synchronizer wants to stick around.
-    fn poll<T, A, S, E, SM, SA>(&mut self, view: View<T, A, S, E>) -> Result<Poll<()>, Self::Error>
+    fn poll<A, S, E, SM, SA>(&mut self, view: View<A, S, E>) -> Result<Poll<()>, Self::Error>
     where
-        T: TimesSync<Timestamp = TS>,
-        A: SetSync<Agreement<SM, TS>>,
+        A: SetSync<Agreement<SM>>,
         S: SetAsync<Self::Id, SM>,
         E: SetAsync<Self::Id, SA>,
         SM: ConstructableMessage<AuthorId = Self::Id, Payload = MP>,
-        SA: ConstructableAction<ActorId = Self::Id, Message = SM, Timestamp = TS>;
+        SA: ConstructableAction<ActorId = Self::Id, Message = SM>;
 }
