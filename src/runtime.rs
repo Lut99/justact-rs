@@ -30,8 +30,6 @@ pub trait Runtime {
     type SynchronizerId: ?Sized + ToOwned;
     /// Defines the type of payloads used in the runtime.
     type Payload: ?Sized + ToOwned;
-    /// Defines the type of timestamp used for this impl.
-    type Timestamp;
 
     /// Any errors thrown by the runtime.
     type Error: 'static + Send + error::Error;
@@ -49,8 +47,8 @@ pub trait Runtime {
     fn run<A>(
         &mut self,
         agents: impl IntoIterator<Item = A>,
-        synchronizer: impl Synchronizer<Self::Payload, Self::Timestamp, Id = Self::SynchronizerId>,
+        synchronizer: impl Synchronizer<Self::Payload, Id = Self::SynchronizerId>,
     ) -> Result<(), Self::Error>
     where
-        A: Agent<Self::Payload, Self::Timestamp, Id = Self::AgentId>;
+        A: Agent<Self::Payload, Id = Self::AgentId>;
 }

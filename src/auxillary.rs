@@ -73,19 +73,3 @@ pub trait Identifiable {
     /// A reference to an [`Identifiable::Id`] that describes the unique ID of this object.
     fn id(&self) -> &Self::Id;
 }
-
-
-
-/// Abstractly defines an object which is valid at a certain time.
-#[pointer_impls]
-pub trait Timed {
-    /// The representation of the timestamp.
-    type Timestamp: Eq + Ord;
-
-
-    /// Returns the timestamp at which this object was valid.
-    ///
-    /// # Returns
-    /// A [`Timestamp<Timed::Timestamp>`](Timestamp) encoding the timestamp at which it was valid.
-    fn at(&self) -> &Self::Timestamp;
-}

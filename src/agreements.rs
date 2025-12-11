@@ -16,7 +16,7 @@
 use std::convert::Infallible;
 use std::hash::Hash;
 
-use crate::auxillary::{Authored, Timed};
+use crate::auxillary::Authored;
 use crate::collections::set::Set;
 
 
@@ -24,21 +24,19 @@ use crate::collections::set::Set;
 /// Newtype for a message that everybody agreed upon.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-pub struct Agreement<M, T> {
+pub struct Agreement<M> {
     /// The message embedded in this agreement.
     pub message: M,
-    /// The timestamp at which this agreement is valid.
-    pub at:      T,
 }
 
 // JustAct
-impl<M: Authored, T> Authored for Agreement<M, T> {
+impl<M: Authored> Authored for Agreement<M> {
     type AuthorId = <M as Authored>::AuthorId;
 
     #[inline]
     fn author_id(&self) -> &Self::AuthorId { self.message.author_id() }
 }
-impl<M: Eq + Hash, T> Set<M> for Agreement<M, T> {
+impl<M: Eq + Hash> Set<M> for Agreement<M> {
     type Error = Infallible;
 
     #[inline]
@@ -54,10 +52,4 @@ impl<M: Eq + Hash, T> Set<M> for Agreement<M, T> {
 
     #[inline]
     fn len(&self) -> Result<usize, Self::Error> { Ok(1) }
-}
-impl<M, T: Eq + Ord> Timed for Agreement<M, T> {
-    type Timestamp = T;
-
-    #[inline]
-    fn at(&self) -> &Self::Timestamp { &self.at }
 }
