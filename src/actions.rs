@@ -17,7 +17,6 @@ use std::sync::Arc;
 
 use auto_traits::pointer_impls;
 
-use crate::agreements::Agreement;
 use crate::auxillary::Actored;
 use crate::messages::MessageSet;
 
@@ -37,7 +36,7 @@ pub trait Action: Actored {
     ///
     /// # Returns
     /// An [`Agreement`] to base the action on.
-    fn basis(&self) -> &Agreement<Self::Message>;
+    fn basis(&self) -> &Self::Message;
 
     /// Any additional messages that the actor wants to include in the payload of this action.
     ///
@@ -81,7 +80,7 @@ where
     ///
     /// # Returns
     /// A new Action.
-    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message>, extra: MessageSet<Self::Message>) -> Self
+    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Self::Message, extra: MessageSet<Self::Message>) -> Self
     where
         Self: Sized;
 }
@@ -93,7 +92,7 @@ where
     T::ActorId: ToOwned,
 {
     #[inline]
-    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message>, extra: MessageSet<Self::Message>) -> Self
+    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Self::Message, extra: MessageSet<Self::Message>) -> Self
     where
         Self: Sized,
     {
@@ -106,7 +105,7 @@ where
     T::ActorId: ToOwned,
 {
     #[inline]
-    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message>, extra: MessageSet<Self::Message>) -> Self
+    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Self::Message, extra: MessageSet<Self::Message>) -> Self
     where
         Self: Sized,
     {
@@ -119,7 +118,7 @@ where
     T::ActorId: ToOwned,
 {
     #[inline]
-    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message>, extra: MessageSet<Self::Message>) -> Self
+    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Self::Message, extra: MessageSet<Self::Message>) -> Self
     where
         Self: Sized,
     {

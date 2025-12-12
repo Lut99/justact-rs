@@ -23,7 +23,6 @@ use std::task::Poll;
 use auto_traits::pointer_impls;
 
 use crate::actions::{Action, ConstructableAction};
-use crate::agreements::Agreement;
 use crate::auxillary::Identifiable;
 use crate::collections::set::{InfallibleSet, Set, SetAsync, SetSync};
 use crate::messages::{ConstructableMessage, MessageSet};
@@ -114,20 +113,20 @@ impl<A, S, E> View<A, S, E> {
     /// This function can error if any of the nested sets errors when their iterator is being constructed.
     pub fn statements<'s, SM, SA>(&'s self) -> Result<impl Iterator<Item = &'s SM>, Error<A::Error, S::Error, E::Error>>
     where
-        A: Set<Agreement<SM>>,
+        A: Set<SM>,
         S: Set<SM>,
         E: Set<SA>,
         SM: 's + Eq + Hash,
         SA: 's + Action<Message = SM>,
         SA::ActorId: ToOwned,
     {
-        let aiter = self.agreed.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Agreements(err) })?.map(|a| &a.message);
+        let aiter = self.agreed.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Agreements(err) })?;
         let siter = self.stated.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Statements(err) })?;
         let eiter = self
             .enacted
             .iter()
             .map_err(|err| Error::StatementsIter { err: OneOfSetError::Enactments(err) })?
-            .flat_map(|e| <Agreement<SM> as InfallibleSet<SM>>::iter(e.basis()).chain(<MessageSet<SM> as InfallibleSet<SM>>::iter(e.extra())));
+            .flat_map(|e| Some(e.basis()).into_iter().chain(<MessageSet<SM> as InfallibleSet<SM>>::iter(e.extra())));
         Ok(aiter.chain(siter).chain(eiter))
     }
 }
@@ -179,7 +178,7 @@ where
     /// - a [`Poll::Pending`], indicating the agent wants to stick around.
     fn poll<A, S, E, SM, SA>(&mut self, view: View<A, S, E>) -> Result<Poll<()>, Self::Error>
     where
-        A: Set<Agreement<SM>>,
+        A: Set<SM>,
         S: SetAsync<Self::Id, SM>,
         E: SetAsync<Self::Id, SA>,
         SM: ConstructableMessage<AuthorId = Self::Id, Payload = MP>,
@@ -232,7 +231,7 @@ where
     /// - a [`Poll::Pending`], indicating the synchronizer wants to stick around.
     fn poll<A, S, E, SM, SA>(&mut self, view: View<A, S, E>) -> Result<Poll<()>, Self::Error>
     where
-        A: SetSync<Agreement<SM>>,
+        A: SetSync<SM>,
         S: SetAsync<Self::Id, SM>,
         E: SetAsync<Self::Id, SA>,
         SM: ConstructableMessage<AuthorId = Self::Id, Payload = MP>,

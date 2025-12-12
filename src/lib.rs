@@ -17,7 +17,6 @@
 // Declare submodules
 pub mod actions;
 pub mod actors;
-pub mod agreements;
 pub mod auxillary;
 pub mod collections;
 pub mod messages;
