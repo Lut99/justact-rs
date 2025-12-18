@@ -15,7 +15,7 @@
 use std::collections::HashSet;
 use std::convert::Infallible;
 use std::fmt::{Debug, Formatter, Result as FResult};
-use std::hash::Hash;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -177,6 +177,34 @@ impl<M> MessageSet<M> {
     /// A new MessageSet, ready to store messages.
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self { Self { data: HashSet::with_capacity(capacity) } }
+}
+
+// Ops
+impl<M: Eq + Hash> Eq for MessageSet<M> {}
+impl<M: Eq + Hash> Hash for MessageSet<M> {
+    #[inline]
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        /* We use the sort-by-hash-trick */
+        // First, get a **deterministic** ordering on the items. This is important, as the
+        // conceptually same set must always give the same ordering!
+        let mut elems: Vec<&M> = self.data.iter().collect();
+        elems.sort_by_key(|m| {
+            // Now comes the real trick: we simply hash the element first and then sort the hashes.
+            // NOTE: It is really important that the hasher used between `hash()`-calls of the set
+            // as a whole produces the same hashes; so we won't use `RandomState` here. This does
+            // make the sorting (but only the sorting!) vulnerable to HashDoS.
+            let mut hasher = DefaultHasher::new();
+            m.hash(&mut hasher);
+            hasher.finish()
+        });
+
+        // Using this ordering, we can hash the array to get a predictable hash regardless of set
+        // order.
+        elems.hash(state)
+    }
+}
+impl<M: Hash + Eq> PartialEq for MessageSet<M> {
+    fn eq(&self, other: &Self) -> bool { self.data.eq(&other.data) }
 }
 
 // Justact impls
