@@ -180,8 +180,8 @@ impl<M> MessageSet<M> {
 }
 
 // Ops
-impl<M: Eq + Hash> Eq for MessageSet<M> {}
-impl<M: Eq + Hash> Hash for MessageSet<M> {
+impl<M: Eq> Eq for MessageSet<M> {}
+impl<M: Hash> Hash for MessageSet<M> {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
         /* We use the sort-by-hash-trick */
@@ -203,8 +203,35 @@ impl<M: Eq + Hash> Hash for MessageSet<M> {
         elems.hash(state)
     }
 }
-impl<M: Hash + Eq> PartialEq for MessageSet<M> {
-    fn eq(&self, other: &Self) -> bool { self.data.eq(&other.data) }
+impl<M: PartialEq> PartialEq for MessageSet<M> {
+    fn eq(&self, other: &Self) -> bool {
+        /* We use the cross-out-opponents trick */
+        // It's important that a difference in length is caught early, both for efficiency and for
+        // correctness at the end.
+        if self.data.len() != other.data.len() {
+            return false;
+        }
+
+        // Let's get the list of items in `other`.
+        // NOTE: We _don't_ use a hashset here as we don't want to assume `Hash`.
+        let mut to_cross: Vec<&M> = self.data.iter().collect();
+
+        // Then, iterate through our own elements and find them in `other`.
+        for elem in &self.data {
+            // NOTE: Our own `Set::iter()`-impl is in the way here, awkward xD
+            if let Some(i) = <[_]>::iter(&to_cross).enumerate().find_map(|(i, &e)| if elem == e { Some(i) } else { None }) {
+                // We found it, cross it out
+                to_cross.swap_remove(i);
+            } else {
+                // We didn't find the element, it does not exist, they are not equal!
+                return false;
+            }
+        }
+
+        // If we got here, `self \subseteq other`. Further, `self \cap other = \emptyset`, since
+        // `self` and `other` necessarily have the same length. Thus: `self == other`!
+        true
+    }
 }
 
 // Justact impls
