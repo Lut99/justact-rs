@@ -64,6 +64,14 @@ pub trait Message: Authored + Eq + Hash {
     /// # Returns
     /// An immutable reference to the internal [`Message::Payload`].
     fn payload(&self) -> &Self::Payload;
+
+
+    /// Optional method that will yield a human-friendly identifier for this message.
+    ///
+    /// # Returns
+    /// A string that identifies this message, friendly. If it's not implemented, it yields "???".
+    #[inline]
+    fn human_id(&self) -> &str { "???" }
 }
 
 // Pointer-like implementations

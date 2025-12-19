@@ -57,6 +57,14 @@ pub trait Action: Actored {
     /// # Returns
     /// A [`MessageSet`] encoding the extra statements included by the actor.
     fn payload(&self) -> MessageSet<Self::Message>;
+
+
+    /// Optional method that will yield a human-friendly identifier for this action.
+    ///
+    /// # Returns
+    /// A string that identifies this action, friendly. If it's not implemented, it yields "???".
+    #[inline]
+    fn human_id(&self) -> &str { "???" }
 }
 
 
