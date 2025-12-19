@@ -255,6 +255,9 @@ impl<M: Eq + Hash> Set<M> for MessageSet<M> {
 impl<M: Eq + Hash> SetSync<M> for MessageSet<M> {
     #[inline]
     fn add(&mut self, elem: M) -> Result<bool, Self::Error> { Ok(self.data.insert(elem)) }
+
+    #[inline]
+    fn clear(&mut self) -> Result<(), Self::Error> { Ok(self.data.clear()) }
 }
 
 // Serde

@@ -326,6 +326,15 @@ pub trait SetSync<E>: Set<E> {
     /// # Errors
     /// When this function errors is completely implementation-dependent.
     fn add(&mut self, elem: E) -> Result<bool, Self::Error>;
+
+    /// Clears the set in its entirety.
+    ///
+    /// Since this is a synchronized set, be aware that this will remove all of its elements for
+    /// everyone!
+    ///
+    /// # Errors
+    /// When this function errors is completely implementation-dependent.
+    fn clear(&mut self) -> Result<(), Self::Error>;
 }
 
 // Default impls for std types.
@@ -344,6 +353,9 @@ where
         self.push(new_elem);
         Ok(false)
     }
+
+    #[inline]
+    fn clear(&mut self) -> Result<(), Self::Error> { Ok(<Vec<T>>::clear(self)) }
 }
 impl<T> SetSync<T> for HashSet<T>
 where
@@ -351,6 +363,9 @@ where
 {
     #[inline]
     fn add(&mut self, elem: T) -> Result<bool, Self::Error> { Ok(<Self>::insert(self, elem)) }
+
+    #[inline]
+    fn clear(&mut self) -> Result<(), Self::Error> { Ok(<HashSet<T>>::clear(self)) }
 }
 
 
