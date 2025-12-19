@@ -134,7 +134,7 @@ impl<E, T: Set<E, Error = Infallible> + SetSync<E>> InfallibleSetSync<E> for T {
 /// [infallible](std::convert::Infallible).
 pub trait InfallibleSetAsync<I, E>: Set<E, Error = Infallible> + SetAsync<I, E>
 where
-    I: ?Sized,
+    I: ?Sized + ToOwned,
 {
     /// Inserts a new element into the set.
     ///
@@ -147,11 +147,11 @@ where
     ///
     /// # Errors
     /// When this function errors is completely implementation-dependent.
-    fn add(&mut self, selector: Recipient<&I>, elem: E);
+    fn add(&mut self, selector: Recipient<I::Owned>, elem: E);
 }
-impl<I, E, T: Set<E, Error = Infallible> + SetAsync<I, E>> InfallibleSetAsync<I, E> for T {
+impl<I: ?Sized + ToOwned, E, T: Set<E, Error = Infallible> + SetAsync<I, E>> InfallibleSetAsync<I, E> for T {
     #[inline]
-    fn add(&mut self, selector: Recipient<&I>, elem: E) {
+    fn add(&mut self, selector: Recipient<I::Owned>, elem: E) {
         // SAFETY: It is physically impossible for users to express `Err(...)` due to the inability
         // to construct `Infallible`
         unsafe { <T as SetAsync<I, E>>::add(self, selector, elem).unwrap_unchecked() }
@@ -378,7 +378,7 @@ where
 #[pointer_impls]
 pub trait SetAsync<I, E>: Set<E>
 where
-    I: ?Sized,
+    I: ?Sized + ToOwned,
 {
     /// Inserts a new element into the set.
     ///
@@ -388,5 +388,5 @@ where
     ///
     /// # Errors
     /// When this function errors is completely implementation-dependent.
-    fn add(&mut self, selector: Recipient<&I>, elem: E) -> Result<(), Self::Error>;
+    fn add(&mut self, selector: Recipient<I::Owned>, elem: E) -> Result<(), Self::Error>;
 }

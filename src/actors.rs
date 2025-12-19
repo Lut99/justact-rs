@@ -15,7 +15,6 @@
 //!   synchronized- and asynchronized sets and write to synchronized sets.
 //
 
-use std::borrow::Borrow as _;
 use std::error;
 use std::fmt::{Debug, Display, Formatter, Result as FResult};
 use std::task::Poll;
@@ -138,7 +137,7 @@ impl<I: ?Sized + ToOwned, A, S, E> View<I, A, S, E> {
         }
 
         // Now publish the message
-        self.stated.add(Recipient::One(&author_id.borrow()), msg).map_err(Error::Set)
+        self.stated.add(Recipient::One(author_id), msg).map_err(Error::Set)
     }
 
     /// Have the agent enact an action to their own view.
@@ -163,7 +162,7 @@ impl<I: ?Sized + ToOwned, A, S, E> View<I, A, S, E> {
         }
 
         // Now publish the message
-        self.enacted.add(Recipient::One(&author_id.borrow()), act).map_err(Error::Set)
+        self.enacted.add(Recipient::One(author_id), act).map_err(Error::Set)
     }
 
     /// Agree on a new agreement.
@@ -203,7 +202,7 @@ impl<I: ?Sized + ToOwned, A, S, E> View<I, A, S, E> {
     /// This function errors if we failed to access the list of stated messages or if the current
     /// agent did not know the `message`.
     #[inline]
-    pub fn gossip<MS>(&mut self, to: Recipient<&I>, message: MS) -> Result<(), Error<I::Owned, S::Error>>
+    pub fn gossip<MS>(&mut self, to: Recipient<I::Owned>, message: MS) -> Result<(), Error<I::Owned, S::Error>>
     where
         I::Owned: Clone,
         S: SetAsync<I, MS>,
