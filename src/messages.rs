@@ -32,6 +32,9 @@ macro_rules! message_ptr_impl {
 
             #[inline]
             fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
+
+            #[inline]
+            fn human_id(&self) -> &str { <T as Message>::human_id(self) }
         }
     };
 
@@ -41,6 +44,9 @@ macro_rules! message_ptr_impl {
 
             #[inline]
             fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
+
+            #[inline]
+            fn human_id(&self) -> &str { <T as Message>::human_id(self) }
         }
     };
 }
