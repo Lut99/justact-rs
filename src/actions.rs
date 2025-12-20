@@ -18,7 +18,7 @@ use std::sync::Arc;
 use auto_traits::pointer_impls;
 
 use crate::agreements::Agreement;
-use crate::auxillary::{Actored, Identifiable, Timed};
+use crate::auxillary::{Actored, Timed};
 use crate::messages::MessageSet;
 
 
@@ -28,9 +28,9 @@ use crate::messages::MessageSet;
 /// Like [`Message`]s, actions are abstract because runtimes may wants to decide how they structure
 /// the memory of the Action. In particular, they might want to collide the ID and the author.
 #[pointer_impls]
-pub trait Action: Actored + Identifiable + Timed {
+pub trait Action: Actored + Timed {
     /// The type of messages this action uses.
-    type Message: Identifiable;
+    type Message;
 
 
     /// The agreement that forms the basis of the action.
@@ -45,9 +45,7 @@ pub trait Action: Actored + Identifiable + Timed {
     ///
     /// # Returns
     /// A [`MessageSet`] encoding the extra statements included by the actor.
-    fn extra(&self) -> &MessageSet<Self::Message>
-    where
-        <Self::Message as Identifiable>::Id: ToOwned;
+    fn extra(&self) -> &MessageSet<Self::Message>;
 
     /// Returns the full payload of this action.
     ///
@@ -59,21 +57,18 @@ pub trait Action: Actored + Identifiable + Timed {
     ///
     /// # Returns
     /// A [`MessageSet`] encoding the extra statements included by the actor.
-    fn payload(&self) -> MessageSet<Self::Message>
-    where
-        <Self::Message as Identifiable>::Id: ToOwned;
+    fn payload(&self) -> MessageSet<Self::Message>;
 }
 
 
 
 /// Defines a constructor for an action.
 ///
-/// This is a more powerful version of an action that can also be constructed, but needn't be one itself.
+/// This is a more powerful version of an action that can also be constructed, but needn't be one
+/// itself.
 pub trait ConstructableAction: Clone + Action
 where
-    Self::Id: ToOwned,
     Self::ActorId: ToOwned,
-    <Self::Message as Identifiable>::Id: ToOwned,
 {
     /// Constructor for a new action with the given ID, actor, basis and justification.
     ///
@@ -81,16 +76,12 @@ where
     /// - `id`: The identifier of the new actor.
     /// - `actor_id`: The identifier of the action's actor.
     /// - `basis`: The basis used to justify the action.
-    /// - `justification`: The justification of the action. Should include the basis!
+    /// - `extra`: Additional messages used for the justification of the action. Should **not**
+    ///   include the basis!
     ///
     /// # Returns
     /// A new Action.
-    fn new(
-        id: <Self::Id as ToOwned>::Owned,
-        actor_id: <Self::ActorId as ToOwned>::Owned,
-        basis: Agreement<Self::Message, Self::Timestamp>,
-        justification: MessageSet<Self::Message>,
-    ) -> Self
+    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message, Self::Timestamp>, extra: MessageSet<Self::Message>) -> Self
     where
         Self: Sized;
 }
@@ -99,60 +90,39 @@ where
 impl<T> ConstructableAction for Box<T>
 where
     T: ConstructableAction,
-    T::Id: ToOwned,
     T::ActorId: ToOwned,
-    <T::Message as Identifiable>::Id: ToOwned,
 {
     #[inline]
-    fn new(
-        id: <Self::Id as ToOwned>::Owned,
-        actor_id: <Self::ActorId as ToOwned>::Owned,
-        basis: Agreement<Self::Message, Self::Timestamp>,
-        justification: MessageSet<Self::Message>,
-    ) -> Self
+    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message, Self::Timestamp>, extra: MessageSet<Self::Message>) -> Self
     where
         Self: Sized,
     {
-        Box::new(<T as ConstructableAction>::new(id, actor_id, basis, justification))
+        Box::new(<T as ConstructableAction>::new(actor_id, basis, extra))
     }
 }
 impl<T> ConstructableAction for Rc<T>
 where
     T: ConstructableAction,
-    T::Id: ToOwned,
     T::ActorId: ToOwned,
-    <T::Message as Identifiable>::Id: ToOwned,
 {
     #[inline]
-    fn new(
-        id: <Self::Id as ToOwned>::Owned,
-        actor_id: <Self::ActorId as ToOwned>::Owned,
-        basis: Agreement<Self::Message, Self::Timestamp>,
-        justification: MessageSet<Self::Message>,
-    ) -> Self
+    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message, Self::Timestamp>, extra: MessageSet<Self::Message>) -> Self
     where
         Self: Sized,
     {
-        Rc::new(<T as ConstructableAction>::new(id, actor_id, basis, justification))
+        Rc::new(<T as ConstructableAction>::new(actor_id, basis, extra))
     }
 }
 impl<T> ConstructableAction for Arc<T>
 where
     T: ConstructableAction,
-    T::Id: ToOwned,
     T::ActorId: ToOwned,
-    <T::Message as Identifiable>::Id: ToOwned,
 {
     #[inline]
-    fn new(
-        id: <Self::Id as ToOwned>::Owned,
-        actor_id: <Self::ActorId as ToOwned>::Owned,
-        basis: Agreement<Self::Message, Self::Timestamp>,
-        justification: MessageSet<Self::Message>,
-    ) -> Self
+    fn new(actor_id: <Self::ActorId as ToOwned>::Owned, basis: Agreement<Self::Message, Self::Timestamp>, extra: MessageSet<Self::Message>) -> Self
     where
         Self: Sized,
     {
-        Arc::new(<T as ConstructableAction>::new(id, actor_id, basis, justification))
+        Arc::new(<T as ConstructableAction>::new(actor_id, basis, extra))
     }
 }

@@ -24,8 +24,8 @@ use auto_traits::pointer_impls;
 
 use crate::actions::{Action, ConstructableAction};
 use crate::agreements::Agreement;
-use crate::auxillary::{Authored, Identifiable};
-use crate::collections::map::{InfallibleMap, Map, MapAsync, MapSync};
+use crate::auxillary::Identifiable;
+use crate::collections::set::{InfallibleSet, Set, SetAsync, SetSync};
 use crate::messages::{ConstructableMessage, MessageSet};
 use crate::times::{Times, TimesSync};
 
@@ -65,26 +65,22 @@ impl<EA: error::Error, ES: error::Error, EE: error::Error> error::Error for OneO
 
 /// Defines errors that originate from the [`View`].
 #[derive(Debug)]
-pub enum Error<I, EA, ES, EE> {
-    /// Failed to get a particular statement.
-    StatementGet { id: I, err: OneOfSetError<EA, ES, EE> },
+pub enum Error<EA, ES, EE> {
     /// Failed to create an iterator over all statements.
     StatementsIter { err: OneOfSetError<EA, ES, EE> },
 }
-impl<I: Debug, EA, ES, EE> Display for Error<I, EA, ES, EE> {
+impl<EA, ES, EE> Display for Error<EA, ES, EE> {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FResult {
         match self {
-            Self::StatementGet { id, .. } => write!(f, "Failed to get statement {id:?}"),
             Self::StatementsIter { .. } => write!(f, "Failed to iterate over all the statements in a view"),
         }
     }
 }
-impl<I: Debug, EA: 'static + error::Error, ES: 'static + error::Error, EE: 'static + error::Error> error::Error for Error<I, EA, ES, EE> {
+impl<EA: 'static + error::Error, ES: 'static + error::Error, EE: 'static + error::Error> error::Error for Error<EA, ES, EE> {
     #[inline]
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match self {
-            Self::StatementGet { err, .. } => Some(err),
             Self::StatementsIter { err } => Some(err),
         }
     }
@@ -108,60 +104,6 @@ pub struct View<T, A, S, E> {
     pub enacted: E,
 }
 impl<T, A, S, E> View<T, A, S, E> {
-    /// Returns a message with a particular ID across all statements in this view.
-    ///
-    /// This searches not just the statements in [`View::stated`], but also those embedded in
-    /// [`View::agreed`] and [`View::enacted`].
-    ///
-    /// # Arguments
-    /// - `id`: The identifier of the message to search for.
-    ///
-    /// # Returns
-    /// A reference to the matching [`Message`], or else [`None`].
-    ///
-    /// # Errors
-    /// This function can error if any of the agreements or statements sets errors when an element
-    /// is being retrieved. In addition, the enacted set may throw an error if iterating over it
-    /// failed.
-    pub fn get_statement<'s, SM, SA>(&'s self, id: &SM::Id) -> Result<Option<&'s SM>, Error<SM::Id, A::Error, S::Error, E::Error>>
-    where
-        T: Times,
-        A: Map<Agreement<SM, T::Timestamp>>,
-        S: Map<SM>,
-        E: Map<SA>,
-        SM: Authored + Identifiable,
-        SM::Id: Clone,
-        SA: 's + Action<Message = SM, Timestamp = T::Timestamp>,
-        SA::Id: ToOwned,
-        SA::ActorId: ToOwned,
-    {
-        match self.agreed.get(id) {
-            Ok(Some(agree)) => return Ok(Some(&agree.message)),
-            Ok(None) => {},
-            Err(err) => return Err(Error::StatementGet { id: id.clone(), err: OneOfSetError::Agreements(err) }),
-        }
-        match self.stated.get(id) {
-            Ok(Some(msg)) => return Ok(Some(msg)),
-            Ok(None) => {},
-            Err(err) => return Err(Error::StatementGet { id: id.clone(), err: OneOfSetError::Statements(err) }),
-        }
-        for act in self.enacted.iter().map_err(|err| Error::StatementGet { id: id.clone(), err: OneOfSetError::Enactments(err) })? {
-            // First search the basis.
-            // NOTE: We don't search the payload due to lifetime issues, and it's basis + extras
-            // anyway. Further, we assume that we can't predict the ID of the actor anyway.
-            let agr = act.basis();
-            if agr.message.id() == id {
-                return Ok(Some(&agr.message));
-            }
-
-            // Then the justification
-            if let Some(msg) = <MessageSet<SM> as InfallibleMap<SM>>::get(act.extra(), id) {
-                return Ok(Some(msg));
-            }
-        }
-        Ok(None)
-    }
-
     /// Returns an iterator over all the statements in this view.
     ///
     /// This is not just the statements in [`View::stated`], but also those embedded in
@@ -173,23 +115,20 @@ impl<T, A, S, E> View<T, A, S, E> {
     ///
     /// # Errors
     /// This function can error if any of the nested sets errors when their iterator is being constructed.
-    pub fn statements<'s, SM, SA>(&'s self) -> Result<impl 's + Iterator<Item = SM>, Error<<SM::Id as ToOwned>::Owned, A::Error, S::Error, E::Error>>
+    pub fn statements<'s, SM, SA>(&'s self) -> Result<impl Iterator<Item = &'s SM>, Error<A::Error, S::Error, E::Error>>
     where
         T: Times,
-        A: Map<Agreement<SM, T::Timestamp>>,
-        S: Map<SM>,
-        E: Map<SA>,
-        SM: 's + Clone + Identifiable,
-        SM::Id: ToOwned,
-        <SM::Id as ToOwned>::Owned: Eq + Hash,
+        A: Set<Agreement<SM, T::Timestamp>>,
+        S: Set<SM>,
+        E: Set<SA>,
+        SM: 's + Eq + Hash,
         SA: 's + Action<Message = SM, Timestamp = T::Timestamp>,
-        SA::Id: ToOwned,
         SA::ActorId: ToOwned,
     {
         let aiter = self.agreed.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Agreements(err) })?.map(|a| &a.message);
         let siter = self.stated.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Statements(err) })?;
         let eiter = self.enacted.iter().map_err(|err| Error::StatementsIter { err: OneOfSetError::Enactments(err) })?.flat_map(|e| {
-            <Agreement<SM, T::Timestamp> as InfallibleMap<SM>>::iter(e.basis()).chain(<MessageSet<SM> as InfallibleMap<SM>>::iter(e.extra()))
+            <Agreement<SM, T::Timestamp> as InfallibleSet<SM>>::iter(e.basis()).chain(<MessageSet<SM> as InfallibleSet<SM>>::iter(e.extra()))
         });
         Ok(aiter.chain(siter).chain(eiter))
     }
@@ -205,15 +144,11 @@ impl<T, A, S, E> View<T, A, S, E> {
 /// (synchronized and otherwise) to publish new content in asynchronized sets they have access to.
 ///
 /// # Generics
-/// - `MI`: The type of message IDs supported by this agent.
-/// - `AI`: The type of action IDs supported by this agent.
 /// - `MP`: The type of the message payloads supported by this Synchronizer.
 /// - `TS`: The type of timestamp supported by this agent.
 #[pointer_impls(T = U)]
-pub trait Agent<MI, AI, MP, TS>: Identifiable
+pub trait Agent<MP, TS>: Identifiable
 where
-    MI: ?Sized + ToOwned,
-    AI: ?Sized + ToOwned,
     MP: ?Sized + ToOwned,
     Self::Id: ToOwned,
 {
@@ -248,11 +183,11 @@ where
     fn poll<T, A, S, E, SM, SA>(&mut self, view: View<T, A, S, E>) -> Result<Poll<()>, Self::Error>
     where
         T: Times<Timestamp = TS>,
-        A: Map<Agreement<SM, TS>>,
-        S: MapAsync<Self::Id, SM>,
-        E: MapAsync<Self::Id, SA>,
-        SM: ConstructableMessage<Id = MI, AuthorId = Self::Id, Payload = MP>,
-        SA: ConstructableAction<Id = AI, ActorId = Self::Id, Message = SM, Timestamp = TS>;
+        A: Set<Agreement<SM, TS>>,
+        S: SetAsync<Self::Id, SM>,
+        E: SetAsync<Self::Id, SA>,
+        SM: ConstructableMessage<AuthorId = Self::Id, Payload = MP>,
+        SA: ConstructableAction<ActorId = Self::Id, Message = SM, Timestamp = TS>;
 }
 
 
@@ -263,15 +198,11 @@ where
 /// Like agents, they may use information available in any kind of set to do so.
 ///
 /// # Generics
-/// - `MI`: The type of message IDs supported by this Synchronizer.
-/// - `AI`: The type of action IDs supported by this Synchronizer.
 /// - `MP`: The type of the message payloads supported by this Synchronizer.
 /// - `TS`: The type of timestamp supported by this Synchronizer.
 #[pointer_impls(T = U)]
-pub trait Synchronizer<MI, AI, MP, TS>: Identifiable
+pub trait Synchronizer<MP, TS>: Identifiable
 where
-    MI: ?Sized + ToOwned,
-    AI: ?Sized + ToOwned,
     MP: ?Sized + ToOwned,
     Self::Id: ToOwned,
 {
@@ -307,9 +238,9 @@ where
     fn poll<T, A, S, E, SM, SA>(&mut self, view: View<T, A, S, E>) -> Result<Poll<()>, Self::Error>
     where
         T: TimesSync<Timestamp = TS>,
-        A: MapSync<Agreement<SM, TS>>,
-        S: MapAsync<Self::Id, SM>,
-        E: MapAsync<Self::Id, SA>,
-        SM: ConstructableMessage<Id = MI, AuthorId = Self::Id, Payload = MP>,
-        SA: ConstructableAction<Id = AI, ActorId = Self::Id, Message = SM, Timestamp = TS>;
+        A: SetSync<Agreement<SM, TS>>,
+        S: SetAsync<Self::Id, SM>,
+        E: SetAsync<Self::Id, SA>,
+        SM: ConstructableMessage<AuthorId = Self::Id, Payload = MP>,
+        SA: ConstructableAction<ActorId = Self::Id, Message = SM, Timestamp = TS>;
 }

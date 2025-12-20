@@ -128,13 +128,11 @@ pub trait Policy: Default {
 /// Defines that something can extract policy.
 ///
 /// # Generics
-/// - `I`: The type of message identifiers that this extractor is compatible with.
 /// - `A`: The type of agent identifiers that this extractor is compatible with.
 /// - `P`: The type of message payloads that this extractor is compatible with.
 #[pointer_impls]
-pub trait Extractor<I, A, C>
+pub trait Extractor<A, C>
 where
-    I: ?Sized + ToOwned,
     A: ?Sized + ToOwned,
     C: ?Sized,
 {
@@ -155,8 +153,5 @@ where
     /// # Errors
     /// This function should error if and only if the policy contained in this object fails to
     /// parse.
-    fn extract<'m, 'm2: 'm, M: 'm2 + Message<Id = I, AuthorId = A, Payload = C>>(
-        &self,
-        msgs: &'m impl Map<M>,
-    ) -> Result<Self::Policy<'m>, Self::Error<'m>>;
+    fn extract<'m, 'm2: 'm, M: 'm2 + Message<AuthorId = A, Payload = C>>(&self, msgs: &'m impl Map<M>) -> Result<Self::Policy<'m>, Self::Error<'m>>;
 }

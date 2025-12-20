@@ -24,10 +24,6 @@ use crate::actors::{Agent, Synchronizer};
 /// Defines the toplevel [`Runtime`], which brings the ontology together.
 #[pointer_impls]
 pub trait Runtime {
-    /// Defines the type of identifiers for messages.
-    type MessageId: ?Sized + ToOwned;
-    /// Defines the type of identifiers for actions.
-    type ActionId: ?Sized + ToOwned;
     /// Defines the type of identifiers for agents.
     type AgentId: ?Sized + ToOwned;
     /// Defines the type of identifiers for synchronizers.
@@ -53,8 +49,8 @@ pub trait Runtime {
     fn run<A>(
         &mut self,
         agents: impl IntoIterator<Item = A>,
-        synchronizer: impl Synchronizer<Self::MessageId, Self::ActionId, Self::Payload, Self::Timestamp, Id = Self::SynchronizerId>,
+        synchronizer: impl Synchronizer<Self::Payload, Self::Timestamp, Id = Self::SynchronizerId>,
     ) -> Result<(), Self::Error>
     where
-        A: Agent<Self::MessageId, Self::ActionId, Self::Payload, Self::Timestamp, Id = Self::AgentId>;
+        A: Agent<Self::Payload, Self::Timestamp, Id = Self::AgentId>;
 }

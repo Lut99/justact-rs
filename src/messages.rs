@@ -12,17 +12,41 @@
 //!   Defines messages & message sets.
 //
 
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::convert::Infallible;
 use std::fmt::{Debug, Formatter, Result as FResult};
 use std::hash::Hash;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use auto_traits::pointer_impls;
+use crate::auxillary::Authored;
+use crate::collections::set::{Set, SetSync};
 
-use crate::auxillary::{Authored, Identifiable};
-use crate::collections::map::{Map, MapSync};
+
+/***** HELPER MACROS *****/
+/// Implements [`Message`] for pointer-like types.
+macro_rules! message_ptr_impl {
+    ('a, $ty:ty) => {
+        impl<'a, T: Message> Message for $ty {
+            type Payload = <T as Message>::Payload;
+
+            #[inline]
+            fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
+        }
+    };
+
+    ($ty:ty) => {
+        impl<T: Message> Message for $ty {
+            type Payload = <T as Message>::Payload;
+
+            #[inline]
+            fn payload(&self) -> &Self::Payload { <T as Message>::payload(self) }
+        }
+    };
+}
+
+
+
 
 
 /***** LIBRARY *****/
@@ -31,8 +55,7 @@ use crate::collections::map::{Map, MapSync};
 /// This is abstract, and not a concrete data structure, because runtimes may wants to decide how
 /// they structure the memory of the Message. In particular, messages might be
 /// [`Arc`](std::sync::Arc)'ed, and they might want to collide the ID and the author.
-#[pointer_impls]
-pub trait Message: Authored + Identifiable {
+pub trait Message: Authored + Eq + Hash {
     /// Defines the type of content carried by this message.
     type Payload: ?Sized;
 
@@ -43,6 +66,13 @@ pub trait Message: Authored + Identifiable {
     fn payload(&self) -> &Self::Payload;
 }
 
+// Pointer-like implementations
+message_ptr_impl!('a, &'a T);
+message_ptr_impl!('a, &'a mut T);
+message_ptr_impl!(Box<T>);
+message_ptr_impl!(Rc<T>);
+message_ptr_impl!(Arc<T>);
+
 
 
 /// Defines a constructor for a message.
@@ -50,20 +80,18 @@ pub trait Message: Authored + Identifiable {
 /// This is a more powerful version of a message that can also be constructed, but needn't be one itself.
 pub trait ConstructableMessage: Clone + Message
 where
-    Self::Id: ToOwned,
     Self::AuthorId: ToOwned,
     Self::Payload: ToOwned,
 {
     /// Constructor for a new message with the given ID, author and payload.
     ///
     /// # Arguments
-    /// - `id`: The identifier of the new message.
     /// - `author_id`: The identifier of the message's author.
     /// - `payload`: The payload to add to the message.
     ///
     /// # Returns
     /// A new Message.
-    fn new(id: <Self::Id as ToOwned>::Owned, author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
+    fn new(author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
     where
         Self: Sized;
 }
@@ -72,106 +100,67 @@ where
 impl<T> ConstructableMessage for Box<T>
 where
     T: ConstructableMessage,
-    T::Id: ToOwned,
     T::AuthorId: ToOwned,
     T::Payload: ToOwned,
 {
     #[inline]
-    fn new(id: <Self::Id as ToOwned>::Owned, author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
+    fn new(author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
     where
         Self: Sized,
     {
-        Box::new(<T as ConstructableMessage>::new(id, author_id, payload))
+        Box::new(<T as ConstructableMessage>::new(author_id, payload))
     }
 }
 impl<T> ConstructableMessage for Rc<T>
 where
     T: ConstructableMessage,
-    T::Id: ToOwned,
     T::AuthorId: ToOwned,
     T::Payload: ToOwned,
 {
     #[inline]
-    fn new(id: <Self::Id as ToOwned>::Owned, author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
+    fn new(author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
     where
         Self: Sized,
     {
-        Rc::new(<T as ConstructableMessage>::new(id, author_id, payload))
+        Rc::new(<T as ConstructableMessage>::new(author_id, payload))
     }
 }
 impl<T> ConstructableMessage for Arc<T>
 where
     T: ConstructableMessage,
-    T::Id: ToOwned,
     T::AuthorId: ToOwned,
     T::Payload: ToOwned,
 {
     #[inline]
-    fn new(id: <Self::Id as ToOwned>::Owned, author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
+    fn new(author_id: <Self::AuthorId as ToOwned>::Owned, payload: <Self::Payload as ToOwned>::Owned) -> Self
     where
         Self: Sized,
     {
-        Arc::new(<T as ConstructableMessage>::new(id, author_id, payload))
+        Arc::new(<T as ConstructableMessage>::new(author_id, payload))
     }
 }
 
 
 
 /// Defines a bunch of messages.
-pub struct MessageSet<M>
-where
-    M: Identifiable,
-    M::Id: ToOwned,
-{
+#[derive(Clone, Debug)]
+pub struct MessageSet<M> {
     /// The messages.
-    data: HashMap<<M::Id as ToOwned>::Owned, M>,
-}
-
-// "Derived" impls
-impl<M> Clone for MessageSet<M>
-where
-    M: Clone + Identifiable,
-    M::Id: ToOwned,
-    <M::Id as ToOwned>::Owned: Clone,
-{
-    #[inline]
-    fn clone(&self) -> Self { Self { data: self.data.clone() } }
-}
-impl<M> Debug for MessageSet<M>
-where
-    M: Debug + Identifiable,
-    M::Id: ToOwned,
-    <M::Id as ToOwned>::Owned: Debug,
-{
-    #[inline]
-    fn fmt(&self, f: &mut Formatter<'_>) -> FResult {
-        let Self { data } = self;
-        let mut fmt = f.debug_struct("MessageSet");
-        fmt.field("data", data);
-        fmt.finish()
-    }
+    data: HashSet<M>,
 }
 
 // Constructors
-impl<M> Default for MessageSet<M>
-where
-    M: Identifiable,
-    M::Id: ToOwned,
-{
+impl<M> Default for MessageSet<M> {
     #[inline]
     fn default() -> Self { Self::new() }
 }
-impl<M: Identifiable> MessageSet<M>
-where
-    M: Identifiable,
-    M::Id: ToOwned,
-{
+impl<M> MessageSet<M> {
     /// Constructor for the MessageSet that initializes it without elements.
     ///
     /// # Returns
     /// A new MessageSet, ready to store messages.
     #[inline]
-    pub fn new() -> Self { Self { data: HashMap::new() } }
+    pub fn new() -> Self { Self { data: HashSet::new() } }
 
     /// Constructor for the MessageSet that initializes it without elements, but with the memory
     /// capacity for at least a specified number.
@@ -187,52 +176,35 @@ where
     /// # Returns
     /// A new MessageSet, ready to store messages.
     #[inline]
-    pub fn with_capacity(capacity: usize) -> Self { Self { data: HashMap::with_capacity(capacity) } }
+    pub fn with_capacity(capacity: usize) -> Self { Self { data: HashSet::with_capacity(capacity) } }
 }
 
 // Justact impls
-impl<M> Map<M> for MessageSet<M>
-where
-    M: Identifiable,
-    M::Id: ToOwned,
-    <M::Id as ToOwned>::Owned: Eq + Hash,
-{
+impl<M: Eq + Hash> Set<M> for MessageSet<M> {
     type Error = Infallible;
 
     #[inline]
-    fn get(&self, id: &<M as Identifiable>::Id) -> Result<Option<&M>, Self::Error> { Ok(self.data.get(id)) }
+    fn get(&self, elem: &M) -> Result<Option<&M>, Self::Error> { Ok(self.data.get(elem)) }
 
     #[inline]
-    fn iter<'s>(&'s self) -> Result<impl Iterator<Item = &'s M>, Self::Error>
+    fn iter<'s>(&'s self) -> Result<impl 's + Iterator<Item = &'s M>, Self::Error>
     where
         M: 's,
     {
-        Ok(self.data.values())
+        Ok(self.data.iter())
     }
 
     #[inline]
     fn len(&self) -> Result<usize, Self::Error> { Ok(self.data.len()) }
 }
-impl<M> MapSync<M> for MessageSet<M>
-where
-    M: Message,
-    M::Id: ToOwned,
-    <M::Id as ToOwned>::Owned: Eq + Hash,
-    M::AuthorId: ToOwned,
-{
+impl<M: Eq + Hash> SetSync<M> for MessageSet<M> {
     #[inline]
-    fn add(&mut self, elem: M) -> Result<Option<M>, Self::Error> { Ok(self.data.insert(elem.id().to_owned(), elem)) }
+    fn add(&mut self, elem: M) -> Result<bool, Self::Error> { Ok(self.data.insert(elem)) }
 }
 
 // Serde
 #[cfg(feature = "serde")]
-impl<'de, M> serde::Deserialize<'de> for MessageSet<M>
-where
-    M: serde::Deserialize<'de> + Message,
-    M::Id: ToOwned,
-    <M::Id as ToOwned>::Owned: Eq + Hash,
-    M::AuthorId: ToOwned,
-{
+impl<'de, M: Eq + Hash + serde::Deserialize<'de>> serde::Deserialize<'de> for MessageSet<M> {
     #[inline]
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -244,10 +216,7 @@ where
         }
         impl<'de, M> serde::de::Visitor<'de> for Visitor<M>
         where
-            M: serde::Deserialize<'de> + Message,
-            M::Id: ToOwned,
-            <M::Id as ToOwned>::Owned: Eq + Hash,
-            M::AuthorId: ToOwned,
+            M: Eq + Hash + serde::Deserialize<'de>,
         {
             type Value = MessageSet<M>;
 
@@ -272,12 +241,7 @@ where
     }
 }
 #[cfg(feature = "serde")]
-impl<M> serde::Serialize for MessageSet<M>
-where
-    M: Identifiable + serde::Serialize,
-    M::Id: ToOwned,
-    <M::Id as ToOwned>::Owned: Eq + Hash,
-{
+impl<M: serde::Serialize> serde::Serialize for MessageSet<M> {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -285,31 +249,19 @@ where
     {
         use serde::ser::SerializeSeq as _;
         let mut access = serializer.serialize_seq(Some(self.data.len()))?;
-        for msg in self.data.values() {
+        for msg in self.data.iter() {
             access.serialize_element(msg)?;
         }
         access.end()
     }
 }
 
-// Iterators
-impl<M> IntoIterator for MessageSet<M>
-where
-    M: Identifiable,
-    M::Id: ToOwned,
-{
-    type IntoIter = std::collections::hash_map::IntoValues<<M::Id as ToOwned>::Owned, M>;
-    type Item = M;
-
+// From
+impl<I: IntoIterator<Item = M>, M: Eq + Hash> From<I> for MessageSet<M> {
     #[inline]
-    fn into_iter(self) -> Self::IntoIter { self.data.into_values() }
+    fn from(value: I) -> Self { MessageSet { data: value.into_iter().collect() } }
 }
-impl<M> FromIterator<M> for MessageSet<M>
-where
-    M: Identifiable,
-    M::Id: ToOwned,
-    <M::Id as ToOwned>::Owned: Eq + Hash,
-{
+impl<M: Eq + Hash> FromIterator<M> for MessageSet<M> {
     #[inline]
     fn from_iter<T: IntoIterator<Item = M>>(iter: T) -> Self { MessageSet { data: iter.into_iter().map(|m| (m.id().to_owned(), m)).collect() } }
 }
