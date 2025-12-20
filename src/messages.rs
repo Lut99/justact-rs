@@ -335,5 +335,5 @@ impl<I: IntoIterator<Item = M>, M: Eq + Hash> From<I> for MessageSet<M> {
 }
 impl<M: Eq + Hash> FromIterator<M> for MessageSet<M> {
     #[inline]
-    fn from_iter<T: IntoIterator<Item = M>>(iter: T) -> Self { MessageSet { data: iter.into_iter().collect() } }
+    fn from_iter<T: IntoIterator<Item = M>>(iter: T) -> Self { Self::from(iter) }
 }
